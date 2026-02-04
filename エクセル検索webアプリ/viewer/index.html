@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Excel JSON Viewer</title>
+  <link rel="stylesheet" href="app.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Excel JSON Viewer</div>
+
+    <div class="controls">
+      <input id="q" type="search" placeholder="検索（現在シート / 全シート）" autocomplete="off" />
+      <label class="checkbox">
+        <input id="scopeAll" type="checkbox" />
+        <span>全シート</span>
+      </label>
+      <button id="clearBtn" type="button">クリア</button>
+    </div>
+
+    <div class="status" id="status">読み込み中...</div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar">
+      <div class="sidebarHeader">
+        <div class="sidebarTitle">Sheets</div>
+        <div class="sidebarMeta" id="meta"></div>
+      </div>
+      <div id="sheetList" class="sheetList"></div>
+    </aside>
+
+    <section class="content">
+      <div class="contentHeader">
+        <h1 id="sheetTitle">-</h1>
+        <div class="sheetInfo" id="sheetInfo"></div>
+      </div>
+
+      <div class="tableWrap" id="tableWrap">
+        <table id="tbl"></table>
+      </div>
+
+      <div class="results" id="results"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

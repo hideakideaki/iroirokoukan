@@ -1,0 +1,28 @@
+{
+  "workbook": "input.xlsx",
+  "output_dir": "viewer/data",
+
+  "default": {
+    "header": { "row_start": 1, "row_end": 1, "join_with": " / " },
+    "data_start_row": null,
+    "col_start": 1,
+    "col_end": null,
+    "trim_empty_rows": true,
+    "trim_empty_cols": false,
+    "skip_hidden_sheets": true,
+    "max_rows_per_sheet": null
+  },
+
+  "sheet_rules": [
+    {
+      "match": "^Summary",
+      "header": { "row_start": 2, "row_end": 3, "join_with": " " },
+      "data_start_row": 4
+    }
+  ],
+
+  "sheets": {
+    "Sheet1": { "header": { "row_start": 3, "row_end": 3 }, "data_start_row": 4 },
+    "Sheet2": { "header": { "row_start": 5, "row_end": 6, "join_with": " " } }
+  }
+}

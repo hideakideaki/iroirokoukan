@@ -1,0 +1,6 @@
+
+REM サーバ起動
+python -m http.server 8000
+
+REM ブラウザで開く（既定ブラウザ）
+http://localhost:8000/
