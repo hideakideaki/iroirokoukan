@@ -132,8 +132,7 @@ const canvas = document.getElementById("canvas");
       pushHistory();
     }
 
-    const inlineEditor = document.createElement("input");
-    inlineEditor.type = "text";
+    const inlineEditor = document.createElement("textarea");
     inlineEditor.className = "inline-editor";
     inlineEditor.hidden = true;
     canvasArea.appendChild(inlineEditor);
@@ -316,11 +315,23 @@ const canvas = document.getElementById("canvas");
 
       if (node.label) {
         const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        const fontSize = node.fontSize || 14;
+        const lines = String(node.label).split("\n");
+        const lineHeight = fontSize * 1.2;
+        const startY = node.h / 2 - (lines.length - 1) * lineHeight / 2 + 4;
         text.setAttribute("x", node.w / 2);
-        text.setAttribute("y", node.h / 2 + 5);
+        text.setAttribute("y", startY);
         text.setAttribute("text-anchor", "middle");
-        text.setAttribute("font-size", node.fontSize || 14);
-        text.textContent = node.label;
+        text.setAttribute("font-size", fontSize);
+        lines.forEach((line, index) => {
+          const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+          tspan.setAttribute("x", node.w / 2);
+          if (index > 0) {
+            tspan.setAttribute("dy", lineHeight);
+          }
+          tspan.textContent = line;
+          text.appendChild(tspan);
+        });
         group.appendChild(text);
       }
 
@@ -762,8 +773,9 @@ const canvas = document.getElementById("canvas");
       const scaleX = ctm.a || 1;
       const scaleY = ctm.d || 1;
       const width = node.w * scaleX;
-      const height = 28 * scaleY;
+      const height = 56 * scaleY;
       inlineEditor.style.width = `${width}px`;
+      inlineEditor.style.height = `${height}px`;
       inlineEditor.style.left = `${screen.x - areaRect.left - width / 2}px`;
       inlineEditor.style.top = `${screen.y - areaRect.top - height / 2}px`;
     }
@@ -782,8 +794,7 @@ const canvas = document.getElementById("canvas");
       if (!state.editingId) return;
       const node = state.nodes.find(n => n.id === state.editingId);
       if (node) {
-        const value = inlineEditor.value.trim();
-        if (value) node.label = value;
+        node.label = inlineEditor.value;
       }
       state.editingId = null;
       inlineEditor.hidden = true;
@@ -1102,6 +1113,11 @@ const canvas = document.getElementById("canvas");
     document.addEventListener("keydown", event => {
       if (!state.mindmapMode) return;
       if (event.key !== "Tab" && event.key !== "Enter") return;
+      const target = event.target;
+      const tag = target && target.tagName ? target.tagName.toLowerCase() : "";
+      if (tag === "input" || tag === "textarea" || tag === "select" || (target && target.isContentEditable)) {
+        return;
+      }
       const nodeId = state.selectedId || (state.selectedIds.length ? state.selectedIds[state.selectedIds.length - 1] : null);
       const baseNode = state.nodes.find(n => n.id === nodeId);
       if (!baseNode) return;
@@ -1431,7 +1447,7 @@ const canvas = document.getElementById("canvas");
 
     inlineEditor.addEventListener("blur", commitInlineEdit);
     inlineEditor.addEventListener("keydown", event => {
-      if (event.key === "Enter") {
+      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
         inlineEditor.blur();
       }
       if (event.key === "Escape") {

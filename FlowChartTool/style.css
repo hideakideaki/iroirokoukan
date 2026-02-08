@@ -236,7 +236,8 @@
     }
 
     .properties input,
-    .properties select {
+    .properties select,
+    .properties textarea {
       width: 100%;
       padding: 8px 10px;
       border-radius: 10px;
@@ -406,6 +407,7 @@
       background: #fff;
       outline: none;
       z-index: 5;
+      resize: none;
     }
 
     .hint {
