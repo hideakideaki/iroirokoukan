@@ -11,6 +11,11 @@ function setStatus(msg) {
   el("status").textContent = msg;
 }
 
+function setResultsMeta(msg) {
+  const node = el("resultsMeta");
+  if (node) node.textContent = msg || "";
+}
+
 function escapeHtml(s) {
   return (s ?? "").toString()
     .replaceAll("&", "&amp;")
@@ -92,6 +97,8 @@ function renderTable(sheetJson, q) {
   const qNorm = (q || "").trim();
   for (let r = 0; r < rows.length; r++) {
     const tr = document.createElement("tr");
+    tr.className = "row";
+    tr.dataset.row = String(r);
     const row = rows[r];
     for (let c = 0; c < columns.length; c++) {
       const td = document.createElement("td");
@@ -107,7 +114,20 @@ function renderTable(sheetJson, q) {
   tbl.appendChild(tbody);
 }
 
-async function openSheetByIndex(i) {
+function clearRowFocus() {
+  document.querySelectorAll(".row.focused").forEach((x) => x.classList.remove("focused"));
+}
+
+function focusRow(rowIndex) {
+  const wrap = el("tableWrap");
+  const row = wrap.querySelector(`tbody tr[data-row="${rowIndex}"]`);
+  if (!row) return;
+  clearRowFocus();
+  row.classList.add("focused");
+  row.scrollIntoView({ block: "center" });
+}
+
+async function openSheetByIndex(i, opts = {}) {
   const item = state.sheets[i];
   state.current = item;
   setActiveSheetItem(item.file);
@@ -120,8 +140,12 @@ async function openSheetByIndex(i) {
 
   const q = el("q").value.trim();
   renderTable(sheetJson, q);
+  clearRowFocus();
 
-  el("results").innerHTML = "";
+  if (!opts.preserveResults) {
+    el("results").innerHTML = "";
+    setResultsMeta("");
+  }
   setStatus(`表示中: ${item.sheet}`);
 }
 
@@ -192,12 +216,13 @@ async function searchAllSheets(q) {
 
 function renderHits(hits, infoText) {
   const box = el("results");
+  setResultsMeta(infoText || "");
   if (!hits.length) {
-    box.innerHTML = infoText ? `<div>${escapeHtml(infoText)}</div>` : `<div>ヒットなし</div>`;
+    box.innerHTML = `<div>No hits</div>`;
     return;
   }
 
-  box.innerHTML = (infoText ? `<div>${escapeHtml(infoText)}</div>` : "") + hits.map((h) => {
+  box.innerHTML = hits.map((h) => {
     const title = `${h.sheet} / row ${h.rowIndex + 1}`;
     const snippet = h.snippet.length > 220 ? (h.snippet.slice(0, 220) + " ...") : h.snippet;
     return `
@@ -215,11 +240,8 @@ function renderHits(hits, infoText) {
 
       const idx = state.sheets.findIndex(s => s.file === file);
       if (idx >= 0) {
-        await openSheetByIndex(idx);
-        // 該当行へスクロール（概算）
-        const wrap = el("tableWrap");
-        const rowHeight = 32; // ざっくり
-        wrap.scrollTop = Math.max(0, rowIndex * rowHeight);
+        await openSheetByIndex(idx, { preserveResults: true });
+        requestAnimationFrame(() => focusRow(rowIndex));
       }
     });
   });
@@ -241,9 +263,11 @@ function setupEvents() {
   el("clearBtn").addEventListener("click", async () => {
     el("q").value = "";
     el("results").innerHTML = "";
+    setResultsMeta("");
     if (state.current) {
       const sheetJson = await getSheetJson(state.current);
       renderTable(sheetJson, "");
+      clearRowFocus();
     }
   });
 }
@@ -260,16 +284,17 @@ async function runSearchAndRender() {
   // 横断/現在シート検索の結果
   if (!q) {
     el("results").innerHTML = "";
+    setResultsMeta("");
     return;
   }
 
   if (!isAllScope()) {
     const r = await searchCurrentSheet(q);
-    renderHits(r.hits, `現在シート内ヒット: ${r.hits.length}（表示上限200）`);
+    renderHits(r.hits, `Current sheet hits: ${r.hits.length} (max 200)`);
   } else {
     setStatus("全シート検索中...");
     const r = await searchAllSheets(q);
-    renderHits(r.hits, `全シート横断ヒット: ${r.hits.length}（表示上限300） / 走査シート: ${r.scannedSheets}`);
+    renderHits(r.hits, `All sheets hits: ${r.hits.length} (max 300) / Scanned: ${r.scannedSheets}`);
     setStatus(state.current ? `表示中: ${state.current.sheet}` : "準備完了");
   }
 }
