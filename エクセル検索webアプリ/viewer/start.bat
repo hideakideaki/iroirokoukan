@@ -45,7 +45,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-REM ---- ブラウザを開く ----
+REM ---- ブラウザを開く ---- 
 start "" "http://localhost:%PORT%/"
 
 REM ---- env1 で http.server 起動（activate不要）----

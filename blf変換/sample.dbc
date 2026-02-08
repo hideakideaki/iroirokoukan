@@ -1,0 +1,69 @@
+VERSION ""
+
+NS_ :
+	BA_
+	BA_DEF_
+	BA_DEF_DEF_
+	BA_DEF_DEF_REL_
+	BA_DEF_REL_
+	BA_DEF_SGTYPE_
+	BA_REL_
+	BA_SGTYPE_
+	BO_TX_BU_
+	BU_BO_REL_
+	BU_EV_REL_
+	BU_SG_REL_
+	CAT_
+	CAT_DEF_
+	CM_
+	ENVVAR_DATA_
+	EV_DATA_
+	FILTER
+	NS_DESC_
+	SGTYPE_
+	SGTYPE_VAL_
+	SG_MUL_VAL_
+	SIGTYPE_GT_
+	SIGTYPE_VALTYPE_
+	SIG_GROUP_
+	SIG_TYPE_REF_
+	SIG_VALTYPE_
+	VAL_
+	VAL_TABLE_
+
+BS_:
+
+BU_: ECU1 ECU2
+
+BO_ 256 EngineData: 8 ECU1
+ SG_ EngineSpeed : 0|16@1+ (0.25,0) [0|16383.75] "rpm" ECU2
+ SG_ CoolantTemp : 16|8@1+ (1,-40) [-40|215] "°C" ECU2
+ SG_ ThrottlePosition : 24|8@1+ (0.392156862745098,0) [0|100] "%" ECU2
+ SG_ FuelLevel : 32|8@1+ (0.5,0) [0|127.5] "%" ECU2
+
+BO_ 512 VehicleSpeed: 4 ECU1
+ SG_ Speed : 0|16@1+ (0.01,0) [0|655.35] "km/h" ECU2
+ SG_ Odometer : 16|16@1+ (0.1,0) [0|6553.5] "km" ECU2
+
+BO_ 768 BrakeStatus: 2 ECU1
+ SG_ BrakePedalPressed : 0|1@1+ (1,0) [0|1] "" ECU2
+ SG_ ABSActive : 1|1@1+ (1,0) [0|1] "" ECU2
+ SG_ ParkingBrake : 2|1@1+ (1,0) [0|1] "" ECU2
+ SG_ BrakePressure : 3|12@1+ (0.1,0) [0|409.5] "bar" ECU2
+
+BO_ 1024 DoorStatus: 1 ECU1
+ SG_ DriverDoor : 0|1@1+ (1,0) [0|1] "" ECU2
+ SG_ PassengerDoor : 1|1@1+ (1,0) [0|1] "" ECU2
+ SG_ RearLeftDoor : 2|1@1+ (1,0) [0|1] "" ECU2
+ SG_ RearRightDoor : 3|1@1+ (1,0) [0|1] "" ECU2
+ SG_ TrunkOpen : 4|1@1+ (1,0) [0|1] "" ECU2
+ SG_ HoodOpen : 5|1@1+ (1,0) [0|1] "" ECU2
+
+VAL_ 1024 DriverDoor 0 "Closed" 1 "Open" ;
+VAL_ 1024 PassengerDoor 0 "Closed" 1 "Open" ;
+VAL_ 1024 RearLeftDoor 0 "Closed" 1 "Open" ;
+VAL_ 1024 RearRightDoor 0 "Closed" 1 "Open" ;
+VAL_ 1024 TrunkOpen 0 "Closed" 1 "Open" ;
+VAL_ 1024 HoodOpen 0 "Closed" 1 "Open" ;
+
+

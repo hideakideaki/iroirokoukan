@@ -1,0 +1,13 @@
+{
+  "input": "sample.blf",
+  "output": "sample.mf4",
+  "dbc": ["sample.dbc","sample2.dbc"],
+  "t_start": 0,
+  "t_end": 20,
+  "raw": false,
+  "stats": true,
+  "id_whitelist": [],
+  "signal_whitelist": [],
+  "signal_blacklist": [],
+  "allow_raw_when_no_decode": false
+}

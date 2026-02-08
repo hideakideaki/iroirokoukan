@@ -1,0 +1,6 @@
+{
+  "input": "output.mf4",
+  "output": "output.csv",
+  "raster": 0.01,
+  "allow_raw_when_no_decode": true
+}

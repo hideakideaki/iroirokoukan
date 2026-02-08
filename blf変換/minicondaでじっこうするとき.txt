@@ -1,0 +1,7 @@
+activate env_blf
+cd C:\Dropbox\300_project\blf変換\working3
+python blf_to_mf4.py --config blf_to_mf4_config.json
+
+python mf4_to_csv.py sample.mf4 sample.csv
+
+
