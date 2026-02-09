@@ -159,7 +159,11 @@ def build_columns(ws, spec: SheetSpec, max_col: int, merged_map: Dict[Tuple[int,
                     continue
                 seen.add(p)
                 deduped.append(p)
-            columns.append(spec.header.join_with.join(deduped))
+            joiner = spec.header.join_with
+            # ヘッダー行の結合で改行を強制しない（セル内改行のみ反映）
+            if "\n" in joiner or "\r" in joiner:
+                joiner = " / "
+            columns.append(joiner.join(deduped))
         else:
             columns.append("")  # 後で補完
     # 空列名を補完
