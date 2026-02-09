@@ -173,12 +173,17 @@ thead th {
   border-bottom: 1px solid var(--border);
   padding: 10px 8px;
   text-align: left;
-  white-space: nowrap;
+  white-space: pre-wrap;
 }
 tbody td {
   border-bottom: 1px solid rgba(255,255,255,0.06);
   padding: 8px 8px;
   vertical-align: top;
+  white-space: nowrap;
+  word-break: normal;
+}
+
+.wrap {
   white-space: pre-wrap;
   word-break: break-word;
 }

@@ -131,7 +131,7 @@ def resolve_sheet_spec(cfg: Dict[str, Any], sheet_name: str) -> SheetSpec:
     )
 
 
-def build_columns(ws, spec: SheetSpec, max_col: int) -> List[str]:
+def build_columns(ws, spec: SheetSpec, max_col: int, merged_map: Dict[Tuple[int, int], Tuple[str, bool]]) -> List[str]:
     col_start = spec.col_start
     col_end = spec.col_end or max_col
     col_end = min(col_end, max_col)
@@ -140,7 +140,11 @@ def build_columns(ws, spec: SheetSpec, max_col: int) -> List[str]:
 
     for r in range(spec.header.row_start, spec.header.row_end + 1):
         for idx, c in enumerate(range(col_start, col_end + 1)):
-            v = cell_to_text(ws.cell(row=r, column=c).value)
+            merged = merged_map.get((r, c))
+            if merged is not None:
+                v = merged[0]
+            else:
+                v = cell_to_text(ws.cell(row=r, column=c).value)
             v = v.strip()
             if v:
                 headers_by_col[idx].append(v)
@@ -165,9 +169,13 @@ def row_is_all_empty(row: List[str]) -> bool:
     return True
 
 
-def trim_trailing_empty_cols(rows: List[List[str]], columns: List[str]) -> Tuple[List[List[str]], List[str]]:
+def trim_trailing_empty_cols(
+    rows: List[List[str]],
+    columns: List[str],
+    wraps: Optional[List[List[bool]]] = None,
+) -> Tuple[List[List[str]], List[str], Optional[List[List[bool]]]]:
     if not rows:
-        return rows, columns
+        return rows, columns, wraps
     last_non_empty = -1
     for r in rows:
         for i, v in enumerate(r):
@@ -175,18 +183,35 @@ def trim_trailing_empty_cols(rows: List[List[str]], columns: List[str]) -> Tuple
                 last_non_empty = max(last_non_empty, i)
     if last_non_empty < 0:
         # 全部空
-        return [], columns[:1] if columns else ["Column_1"]
+        return [], columns[:1] if columns else ["Column_1"], [] if wraps is not None else None
     keep = last_non_empty + 1
     rows2 = [r[:keep] for r in rows]
     cols2 = columns[:keep]
-    return rows2, cols2
+    wraps2 = [w[:keep] for w in wraps] if wraps is not None else None
+    return rows2, cols2, wraps2
+
+
+def build_merged_map(ws) -> Dict[Tuple[int, int], Tuple[str, bool]]:
+    merged_map: Dict[Tuple[int, int], Tuple[str, bool]] = {}
+    for r in ws.merged_cells.ranges:
+        min_row, min_col, max_row, max_col = r.min_row, r.min_col, r.max_row, r.max_col
+        top_left = ws.cell(row=min_row, column=min_col)
+        text = cell_to_text(top_left.value).strip()
+        if not text:
+            continue
+        wrap = bool(getattr(top_left, "alignment", None) and top_left.alignment.wrap_text)
+        for rr in range(min_row, max_row + 1):
+            for cc in range(min_col, max_col + 1):
+                merged_map[(rr, cc)] = (text, wrap)
+    return merged_map
 
 
 def convert_one_sheet(ws, spec: SheetSpec) -> Dict[str, Any]:
     max_row = ws.max_row or 1
     max_col = ws.max_column or 1
 
-    columns = build_columns(ws, spec, max_col)
+    merged_map = build_merged_map(ws)
+    columns = build_columns(ws, spec, max_col, merged_map)
 
     data_start = spec.data_start_row if spec.data_start_row is not None else (spec.header.row_end + 1)
     data_start = max(1, data_start)
@@ -196,6 +221,7 @@ def convert_one_sheet(ws, spec: SheetSpec) -> Dict[str, Any]:
     col_end = min(col_end, max_col)
 
     rows: List[List[str]] = []
+    wraps: List[List[bool]] = []
     # read_onlyでも cell() は使えるが遅くなるので、iter_rowsを使う
     # values_only=True で値だけ取り出す
     iter_min_col = col_start
@@ -204,23 +230,33 @@ def convert_one_sheet(ws, spec: SheetSpec) -> Dict[str, Any]:
     iter_max_row = max_row
 
     count = 0
-    for row_vals in ws.iter_rows(
+    for row_cells in ws.iter_rows(
         min_row=iter_min_row,
         max_row=iter_max_row,
         min_col=iter_min_col,
         max_col=iter_max_col,
-        values_only=True,
+        values_only=False,
     ):
-        row = [cell_to_text(v) for v in row_vals]
+        row: List[str] = []
+        wrap_row: List[bool] = []
+        for cell in row_cells:
+            merged = merged_map.get((cell.row, cell.column))
+            if merged is not None:
+                row.append(merged[0])
+                wrap_row.append(merged[1])
+            else:
+                row.append(cell_to_text(cell.value))
+                wrap_row.append(bool(getattr(cell, "alignment", None) and cell.alignment.wrap_text))
         if spec.trim_empty_rows and row_is_all_empty(row):
             continue
         rows.append(row)
+        wraps.append(wrap_row)
         count += 1
         if spec.max_rows_per_sheet is not None and count >= spec.max_rows_per_sheet:
             break
 
     if spec.trim_empty_cols:
-        rows, columns = trim_trailing_empty_cols(rows, columns)
+        rows, columns, wraps = trim_trailing_empty_cols(rows, columns, wraps)
 
     # 検索用結合テキスト
     rowText = [normalize_for_search(" ".join(r)) for r in rows]
@@ -228,6 +264,7 @@ def convert_one_sheet(ws, spec: SheetSpec) -> Dict[str, Any]:
     return {
         "columns": columns,
         "rows": rows,
+        "wraps": wraps,
         "rowText": rowText,
         "meta": {
             "header_rows": [spec.header.row_start, spec.header.row_end],
@@ -257,8 +294,8 @@ def main() -> int:
     skip_hidden = bool(cfg.get("default", {}).get("skip_hidden_sheets", True))
 
     # data_only=True: 数式は「計算済みの値」を読み取る（未計算だとNoneになることあり）
-    # read_only=True: メモリ節約
-    wb = load_workbook(workbook, data_only=True, read_only=True)
+    # read_only=False: 結合セル情報（merged_cells）を取得するため
+    wb = load_workbook(workbook, data_only=True, read_only=False)
 
     index_items: List[Dict[str, Any]] = []
     generated_at = datetime.now(JST).isoformat()
@@ -285,7 +322,7 @@ def main() -> int:
         }
 
         with open(sheets_dir / filename, "w", encoding="utf-8") as f:
-            json.dump(sheet_json_out, f, ensure_ascii=False)
+            json.dump(sheet_json_out, f, ensure_ascii=False, indent=2)
 
         index_items.append({
             "sheet": ws.title,
@@ -305,7 +342,7 @@ def main() -> int:
     }
 
     with open(out_dir / "index.json", "w", encoding="utf-8") as f:
-        json.dump(index, f, ensure_ascii=False)
+        json.dump(index, f, ensure_ascii=False, indent=2)
 
     print(f"\n[DONE] index.json を生成しました: {out_dir / 'index.json'}")
     return 0

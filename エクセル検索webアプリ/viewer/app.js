@@ -83,6 +83,7 @@ function renderTable(sheetJson, q) {
   const tbl = el("tbl");
   const columns = sheetJson.columns || [];
   const rows = sheetJson.rows || [];
+  const wraps = sheetJson.wraps || [];
 
   const thead = document.createElement("thead");
   const trh = document.createElement("tr");
@@ -100,10 +101,12 @@ function renderTable(sheetJson, q) {
     tr.className = "row";
     tr.dataset.row = String(r);
     const row = rows[r];
+    const wrapRow = wraps[r] || [];
     for (let c = 0; c < columns.length; c++) {
       const td = document.createElement("td");
       const cell = (row[c] ?? "").toString();
       td.innerHTML = highlightText(cell, qNorm);
+      if (wrapRow[c]) td.classList.add("wrap");
       tr.appendChild(td);
     }
     tbody.appendChild(tr);

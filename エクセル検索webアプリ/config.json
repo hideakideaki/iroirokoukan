@@ -3,7 +3,7 @@
   "output_dir": "viewer/data",
 
   "default": {
-    "header": { "row_start": 1, "row_end": 1, "join_with": " / " },
+    "header": { "row_start": 1, "row_end": 1, "join_with": "\n" },
     "data_start_row": null,
     "col_start": 1,
     "col_end": null,
