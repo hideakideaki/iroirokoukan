@@ -152,7 +152,14 @@ def build_columns(ws, spec: SheetSpec, max_col: int, merged_map: Dict[Tuple[int,
     columns: List[str] = []
     for parts in headers_by_col:
         if parts:
-            columns.append(spec.header.join_with.join(parts))
+            deduped: List[str] = []
+            seen = set()
+            for p in parts:
+                if p in seen:
+                    continue
+                seen.add(p)
+                deduped.append(p)
+            columns.append(spec.header.join_with.join(deduped))
         else:
             columns.append("")  # 後で補完
     # 空列名を補完
