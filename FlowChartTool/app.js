@@ -35,6 +35,7 @@ const canvas = document.getElementById("canvas");
     const alignTopButton = document.getElementById("alignTop");
     const alignMiddleButton = document.getElementById("alignMiddle");
     const alignBottomButton = document.getElementById("alignBottom");
+    const sendToBackButton = document.getElementById("sendToBack");
     const undoLimitInput = document.getElementById("undoLimitInput");
 
     const state = {
@@ -535,6 +536,7 @@ const canvas = document.getElementById("canvas");
       alignTopButton.disabled = alignDisabled;
       alignMiddleButton.disabled = alignDisabled;
       alignBottomButton.disabled = alignDisabled;
+      sendToBackButton.disabled = selectedCount < 1;
     }
 
     function getSvgPoint(event) {
@@ -758,6 +760,17 @@ const canvas = document.getElementById("canvas");
         if (type === "bottom") node.y = maxY - node.h;
         if (type === "middle") node.y = centerY - node.h / 2;
       });
+      render();
+      pushHistory();
+    }
+
+    function sendSelectedToBack() {
+      const ids = state.selectedIds.length ? state.selectedIds : [state.selectedId];
+      if (!ids[0]) return;
+      const selectedSet = new Set(ids);
+      const selectedNodes = state.nodes.filter(node => selectedSet.has(node.id));
+      const otherNodes = state.nodes.filter(node => !selectedSet.has(node.id));
+      state.nodes = [...selectedNodes, ...otherNodes];
       render();
       pushHistory();
     }
@@ -1354,6 +1367,7 @@ const canvas = document.getElementById("canvas");
     alignTopButton.addEventListener("click", () => alignSelected("top"));
     alignMiddleButton.addEventListener("click", () => alignSelected("middle"));
     alignBottomButton.addEventListener("click", () => alignSelected("bottom"));
+    sendToBackButton.addEventListener("click", sendSelectedToBack);
 
     fontSizeInput.addEventListener("input", event => {
       const nodeId = state.selectedId || inspectorFields.dataset.id;
@@ -1459,18 +1473,6 @@ const canvas = document.getElementById("canvas");
     setMode("move");
     render();
     if (appVersion) appVersion.textContent = `Version: ${APP_VERSION}`;
-
-    const introNodes = ["start", "process", "decision", "io"].map(type => ({
-      ...shapes[type],
-      id: crypto.randomUUID(),
-      type,
-      x: 140 + Math.random() * 220,
-      y: 120 + Math.random() * 220,
-      color: "#fff1e6",
-      fontSize: 14,
-    }));
-    state.nodes.push(...introNodes);
-    render();
     pushHistory();
 
     function normalizeHexColor(value, fallback) {
