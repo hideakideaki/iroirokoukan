@@ -104,11 +104,11 @@ Sub DrawGantt()
     Set wsG = Worksheets("Gantt")
 
     wsG.Cells.Clear
-    wsG.Cells(2, 1).Value = "Proj"
-    wsG.Cells(2, 2).Value = "仕向け"
-    wsG.Cells(2, 3).Value = "分類"
-    wsG.Cells(2, 4).Value = "Milestone"
-    wsG.Cells(2, 5).Value = "Date"
+    wsG.Cells(3, 1).Value = "Proj"
+    wsG.Cells(3, 2).Value = "仕向け"
+    wsG.Cells(3, 3).Value = "分類"
+    wsG.Cells(3, 4).Value = "Milestone"
+    wsG.Cells(3, 5).Value = "Date"
 
     ' 軸作成（例：2025年）
     Dim startCol As Long: startCol = 6
@@ -236,6 +236,7 @@ Sub RunAll()
     DrawGantt
     DrawGanttYearMonth
     DrawGanttCompressed
+    DrawGanttDaily
     BuildMilestoneProjTable
 End Sub
 
@@ -845,3 +846,238 @@ Private Sub AppendCellText(ByVal targetCell As Range, ByVal addText As String)
         targetCell.Value = CStr(targetCell.Value) & " / " & addText
     End If
 End Sub
+
+Sub DrawGanttDaily()
+    Dim COLOR_MONTH As Long
+    Dim COLOR_DATE As Long
+    Dim START_YEAR As Long
+    Dim END_YEAR As Long
+    Dim ganttColWidth As Double
+    Dim catColors As Object
+
+    COLOR_MONTH = RGB(255, 242, 204)
+    COLOR_DATE = RGB(198, 239, 206)
+    EnsureSettingSheet
+    START_YEAR = CLng(Worksheets("Setting").Range("B1").Value)
+    END_YEAR = CLng(Worksheets("Setting").Range("B2").Value)
+    ganttColWidth = 2.3
+
+    Dim settingColWidth As Variant
+    Dim settingMonthColor As Variant
+    Dim settingDateColor As Variant
+    settingColWidth = Worksheets("Setting").Range("B3").Value
+    settingMonthColor = Worksheets("Setting").Range("B4").Value
+    settingDateColor = Worksheets("Setting").Range("B5").Value
+    If IsNumeric(settingColWidth) And settingColWidth > 0 Then
+        ganttColWidth = CDbl(settingColWidth)
+    End If
+    COLOR_MONTH = ParseSettingColor(settingMonthColor, COLOR_MONTH)
+    COLOR_DATE = ParseSettingColor(settingDateColor, COLOR_DATE)
+    Set catColors = LoadCategoryColors(Worksheets("Setting"))
+
+    Dim wsN As Worksheet, wsG As Worksheet
+    Set wsN = Worksheets("Normalized")
+    On Error Resume Next
+    Set wsG = Worksheets("Gantt_Daily")
+    On Error GoTo 0
+    If wsG Is Nothing Then
+        Set wsG = Worksheets.Add(After:=Worksheets(Worksheets.Count))
+        wsG.Name = "Gantt_Daily"
+    End If
+
+    wsG.Cells.Clear
+    wsG.Cells(2, 1).Value = "Proj"
+    wsG.Cells(2, 2).Value = "仕向け"
+    wsG.Cells(2, 3).Value = "分類"
+    wsG.Cells(2, 4).Value = "Milestone"
+    wsG.Cells(2, 5).Value = "Date"
+
+    Dim startCol As Long: startCol = 6
+    Dim startDate As Date, endDate As Date, curDate As Date
+    startDate = DateSerial(START_YEAR, 1, 1)
+    endDate = DateSerial(END_YEAR, 12, 31)
+
+    Dim c As Long: c = startCol
+    curDate = startDate
+    Dim yearStartCol As Long, monthStartCol As Long
+    Dim prevYear As Long, prevMonth As Long
+    prevYear = -1
+    prevMonth = -1
+    Do While curDate <= endDate
+        If Year(curDate) <> prevYear Then
+            If prevYear <> -1 Then
+                wsG.Range(wsG.Cells(1, yearStartCol), wsG.Cells(1, c - 1)).Merge
+                wsG.Cells(1, yearStartCol).Value = prevYear
+                wsG.Cells(1, yearStartCol).HorizontalAlignment = xlCenter
+            End If
+            yearStartCol = c
+            prevYear = Year(curDate)
+        End If
+        If Month(curDate) <> prevMonth Then
+            If prevMonth <> -1 Then
+                wsG.Range(wsG.Cells(2, monthStartCol), wsG.Cells(2, c - 1)).Merge
+                wsG.Cells(2, monthStartCol).Value = prevMonth
+                wsG.Cells(2, monthStartCol).HorizontalAlignment = xlCenter
+            End If
+            monthStartCol = c
+            prevMonth = Month(curDate)
+        End If
+        wsG.Cells(3, c).Value = Day(curDate)
+        wsG.Cells(3, c).HorizontalAlignment = xlCenter
+        c = c + 1
+        curDate = curDate + 1
+    Loop
+    If c > startCol Then
+        wsG.Range(wsG.Cells(1, yearStartCol), wsG.Cells(1, c - 1)).Merge
+        wsG.Cells(1, yearStartCol).Value = prevYear
+        wsG.Cells(1, yearStartCol).HorizontalAlignment = xlCenter
+        wsG.Range(wsG.Cells(2, monthStartCol), wsG.Cells(2, c - 1)).Merge
+        wsG.Cells(2, monthStartCol).Value = prevMonth
+        wsG.Cells(2, monthStartCol).HorizontalAlignment = xlCenter
+    End If
+
+    Dim lastCol As Long
+    lastCol = c - 1
+    wsG.Range(wsG.Cells(1, startCol), wsG.Cells(1, lastCol)).EntireColumn.ColumnWidth = ganttColWidth
+
+    Dim r As Long
+    Dim prevProj As String, prevDest As String, prevCat As String
+    Dim ganttRow As Long
+    ganttRow = 4
+
+    For r = 2 To wsN.Cells(wsN.Rows.Count, 1).End(xlUp).Row
+        Dim y As Variant, m As Variant, inputVal As Variant
+        y = wsN.Cells(r, 1).Value
+        m = wsN.Cells(r, 2).Value
+        inputVal = wsN.Cells(r, 7).Value
+        If Not IsNumeric(y) Or Not IsNumeric(m) Then GoTo NextDailyRow
+
+        Dim curProj As String, curDest As String, curCat As String
+        curProj = CStr(wsN.Cells(r, 8).Value)
+        curDest = CStr(wsN.Cells(r, 9).Value)
+        curCat = CStr(wsN.Cells(r, 10).Value)
+
+        If Len(prevProj) > 0 And (curProj <> prevProj Or curDest <> prevDest Or curCat <> prevCat) Then
+            ganttRow = ganttRow + 1
+            With wsG.Range(wsG.Cells(ganttRow, 1), wsG.Cells(ganttRow, lastCol)).Borders(xlEdgeTop)
+                .LineStyle = xlContinuous
+                .Weight = xlThick
+            End With
+        End If
+
+        wsG.Cells(ganttRow, 1).Value = curProj
+        If Len(curProj) > 0 And curProj = prevProj Then
+            wsG.Cells(ganttRow, 1).Font.Color = RGB(180, 180, 180)
+        Else
+            wsG.Cells(ganttRow, 1).Font.ColorIndex = xlAutomatic
+        End If
+        wsG.Cells(ganttRow, 2).Value = curDest
+        If Len(curDest) > 0 And curDest = prevDest Then
+            wsG.Cells(ganttRow, 2).Font.Color = RGB(180, 180, 180)
+        Else
+            wsG.Cells(ganttRow, 2).Font.ColorIndex = xlAutomatic
+        End If
+        wsG.Cells(ganttRow, 3).Value = curCat
+        wsG.Cells(ganttRow, 4).Value = wsN.Cells(r, 6).Value
+
+        Dim evStart As Date, evEnd As Date
+        If Not TryGetNormalizedDateRange(wsN, r, evStart, evEnd) Then GoTo NextDailyRow
+
+        wsG.Cells(ganttRow, 5).Value = Format(evStart, "yyyy/m/d") & " - " & Format(evEnd, "yyyy/m/d")
+
+        prevProj = curProj
+        prevDest = curDest
+        prevCat = curCat
+
+        Dim catColor As Variant
+        catColor = GetCategoryColor(catColors, curCat)
+
+        Dim fillColor As Long
+        If Not IsEmpty(catColor) Then
+            fillColor = CLng(catColor)
+        ElseIf CStr(wsN.Cells(r, 5).Value) = "MONTH" Then
+            fillColor = COLOR_MONTH
+        Else
+            fillColor = COLOR_DATE
+        End If
+
+        Dim startIdx As Long, endIdx As Long
+        startIdx = DateDiff("d", startDate, evStart)
+        endIdx = DateDiff("d", startDate, evEnd)
+        If endIdx < 0 Or startIdx > (lastCol - startCol) Then GoTo NextDailyPaint
+        If startIdx < 0 Then startIdx = 0
+        If endIdx > (lastCol - startCol) Then endIdx = (lastCol - startCol)
+
+        Dim colStart As Long, colEnd As Long
+        colStart = startCol + startIdx
+        colEnd = startCol + endIdx
+
+        wsG.Range(wsG.Cells(ganttRow, colStart), wsG.Cells(ganttRow, colEnd)).Interior.Color = fillColor
+        With wsG.Cells(ganttRow, colStart)
+            .Value = wsN.Cells(r, 4).Value
+            .WrapText = False
+            .HorizontalAlignment = xlLeft
+        End With
+
+NextDailyPaint:
+        ganttRow = ganttRow + 1
+NextDailyRow:
+    Next
+
+    Dim lastDataRow As Long
+    lastDataRow = ganttRow - 1
+    If lastDataRow >= 3 Then
+        wsG.Range(wsG.Cells(3, 1), wsG.Cells(lastDataRow, startCol - 1)).AutoFilter
+    End If
+End Sub
+
+Private Function TryGetNormalizedDateRange(ByVal wsN As Worksheet, ByVal r As Long, ByRef outStart As Date, ByRef outEnd As Date) As Boolean
+    On Error GoTo Fail
+
+    Dim y As Long, m As Long
+    Dim colorType As String
+    Dim tmb As String
+    Dim inputVal As Variant
+
+    y = CLng(wsN.Cells(r, 1).Value)
+    m = CLng(wsN.Cells(r, 2).Value)
+    colorType = CStr(wsN.Cells(r, 5).Value)
+    tmb = UCase$(Trim$(CStr(wsN.Cells(r, 3).Value)))
+    inputVal = wsN.Cells(r, 7).Value
+
+    If m < 1 Or m > 12 Then GoTo Fail
+
+    If colorType = "MONTH" Then
+        outStart = DateSerial(y, m, 1)
+        outEnd = DateSerial(y, m + 1, 0)
+        TryGetNormalizedDateRange = True
+        Exit Function
+    End If
+
+    If IsNumeric(inputVal) Then
+        outStart = DateSerial(y, m, CLng(inputVal))
+        outEnd = outStart
+        TryGetNormalizedDateRange = True
+        Exit Function
+    End If
+
+    Select Case tmb
+        Case "T"
+            outStart = DateSerial(y, m, 1)
+            outEnd = DateSerial(y, m, 10)
+        Case "M"
+            outStart = DateSerial(y, m, 11)
+            outEnd = DateSerial(y, m, 20)
+        Case "B"
+            outStart = DateSerial(y, m, 21)
+            outEnd = DateSerial(y, m + 1, 0)
+        Case Else
+            GoTo Fail
+    End Select
+
+    TryGetNormalizedDateRange = True
+    Exit Function
+
+Fail:
+    TryGetNormalizedDateRange = False
+End Function
