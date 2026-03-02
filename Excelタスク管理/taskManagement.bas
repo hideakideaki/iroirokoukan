@@ -1,7 +1,7 @@
-Option Explicit
+﻿Option Explicit
 
 '========================
-' 設定（必要なら変更）
+' Settings
 '========================
 Private Const SHEET_INPUT As String = "Input"
 Private Const SHEET_MASTER As String = "Master"
@@ -13,10 +13,10 @@ Private Const SETTING_KEY_ACTUAL_STYLE As String = "ActualStyle"
 Private Const ACTUAL_STYLE_SQUARE As String = "SQUARE"
 Private Const ACTUAL_STYLE_BORDER As String = "BORDER"
 
-' 階層数（拡張したい場合はここを変える）
-Private Const MAX_LEVEL As Long = 4   ' 5にしたければ5にして、Input側の階層列も増やす（後述）
+' Hierarchy depth
+Private Const MAX_LEVEL As Long = 4   ' If you change to 5, add L5 column in Input sheet.
 
-' Input列（A〜K）
+' Input columns (legacy fixed constants; actual read uses header mapping)
 Private Const COL_L1 As Long = 1  'A
 Private Const COL_L2 As Long = 2  'B
 Private Const COL_L3 As Long = 3  'C
@@ -29,7 +29,7 @@ Private Const COL_PROG As Long = 9        'I
 Private Const COL_OWNER As Long = 10      'J
 Private Const COL_STATUS As Long = 11     'K
 
-' Master列
+' Master columns
 Private Enum MasterCol
     mTaskID = 1
     mParentID = 2
@@ -48,7 +48,7 @@ Private Enum MasterCol
 End Enum
 
 '========================
-' エントリポイント
+' Entry point
 '========================
 Public Sub Build_All()
     Application.ScreenUpdating = False
@@ -76,7 +76,7 @@ Public Sub Build_All()
 End Sub
 
 '========================
-' シート準備
+' Sheet setup
 '========================
 Private Sub EnsureSheets()
     Dim wb As Workbook: Set wb = ThisWorkbook
@@ -100,7 +100,7 @@ Private Sub EnsureSheet(ByVal wb As Workbook, ByVal name As String)
 End Sub
 
 '========================
-' Input -> Master（ID化）
+' Input -> Master
 '========================
 Private Sub BuildMasterFromInput(ByVal nodes As Object, ByVal children As Object, ByRef nextId As Long)
     Dim ws As Worksheet: Set ws = ThisWorkbook.Worksheets(SHEET_INPUT)
@@ -112,11 +112,11 @@ Private Sub BuildMasterFromInput(ByVal nodes As Object, ByVal children As Object
     
     Dim r As Long
     For r = 2 To lastRow
-        ' 完全空行スキップ
+        ' Skip completely empty row
         If IsRowEmpty(ws, r, colMap) Then GoTo ContinueRow
         
-        ' 階層値（ここではMAX_LEVEL=4前提でA〜D）
-        Dim lv(1 To 10) As String ' MAX_LEVELが5以上でも余裕
+        ' Hierarchy values
+        Dim lv(1 To 10) As String
         lv(1) = Trim(CStr(ws.Cells(r, CLng(colMap("L1"))).Value))
         lv(2) = Trim(CStr(ws.Cells(r, CLng(colMap("L2"))).Value))
         lv(3) = Trim(CStr(ws.Cells(r, CLng(colMap("L3"))).Value))
@@ -125,13 +125,13 @@ Private Sub BuildMasterFromInput(ByVal nodes As Object, ByVal children As Object
         Dim i As Long
         For i = 1 To MAX_LEVEL
             If lv(i) = "" Then
-                Err.Raise vbObjectError + 100, , "Inputの階層が欠けています。行 " & r & " を確認してください。A〜D（階層）は全て必須です。"
+                Err.Raise vbObjectError + 100, , "Missing hierarchy value at row " & r & ". L1-L" & MAX_LEVEL & " are required."
             End If
         Next i
         
         Dim pj As String: pj = lv(1)
         
-        ' 日付（Planは任意、Actualは任意）
+        ' Dates (Plan/Actual are optional)
         Dim ps As Variant, pe As Variant
         ps = ws.Cells(r, CLng(colMap("PlanStart"))).Value
         pe = ws.Cells(r, CLng(colMap("PlanEnd"))).Value
@@ -139,7 +139,7 @@ Private Sub BuildMasterFromInput(ByVal nodes As Object, ByVal children As Object
         Dim hasPlanEnd As Boolean: hasPlanEnd = IsDate(pe)
         If hasPlanStart And hasPlanEnd Then
             If CDate(ps) > CDate(pe) Then
-                Err.Raise vbObjectError + 102, , "PlanStart > PlanEnd です。行 " & r
+                Err.Raise vbObjectError + 102, , "PlanStart > PlanEnd at row " & r
             End If
         End If
         
@@ -151,7 +151,7 @@ Private Sub BuildMasterFromInput(ByVal nodes As Object, ByVal children As Object
         Dim hasActEnd As Boolean: hasActEnd = IsDate(aev)
         If hasActStart And hasActEnd Then
             If CDate(asv) > CDate(aev) Then
-                Err.Raise vbObjectError + 103, , "ActualStart > ActualEnd です。行 " & r
+                Err.Raise vbObjectError + 103, , "ActualStart > ActualEnd at row " & r
             End If
         End If
         
@@ -160,20 +160,20 @@ Private Sub BuildMasterFromInput(ByVal nodes As Object, ByVal children As Object
         owner = Trim(CStr(ws.Cells(r, CLng(colMap("Owner"))).Value))
         status = Trim(CStr(ws.Cells(r, CLng(colMap("Status"))).Value))
         
-        ' path生成（A/B/C/D… を "/" で連結）
+        ' Build path (L1/L2/... with "/")
         Dim path(1 To 10) As String
         path(1) = lv(1)
         For i = 2 To MAX_LEVEL
             path(i) = path(i - 1) & "/" & lv(i)
         Next i
         
-        ' ノード作成（Lv1〜LvMAX_LEVEL）
+        ' Create nodes (Lv1..LvMAX_LEVEL)
         EnsureNode nodes, children, path(1), vbNullString, 1, pj, lv(1), False, nextId
         For i = 2 To MAX_LEVEL
             EnsureNode nodes, children, path(i), path(i - 1), i, pj, lv(i), (i = MAX_LEVEL), nextId
         Next i
         
-        ' Leaf属性
+        ' Leaf attributes
         Dim leafPath As String: leafPath = path(MAX_LEVEL)
         Dim n As Object: Set n = nodes(leafPath)
         If hasPlanStart Then
@@ -215,19 +215,19 @@ Private Function ResolveInputColumns(ByVal ws As Worksheet) As Object
     
     Dim i As Long
     For i = 1 To MAX_LEVEL
-        m.Add "L" & CStr(i), RequireHeaderColumn(headerIndex, Array("L" & CStr(i), "Level" & CStr(i), "階層" & CStr(i)), "L" & CStr(i))
+        m.Add "L" & CStr(i), RequireHeaderColumn(headerIndex, Array("L" & CStr(i), "Level" & CStr(i), "Hierarchy" & CStr(i)), "L" & CStr(i))
     Next i
     
-    m.Add "PlanStart", RequireHeaderColumn(headerIndex, Array("PlanStart", "Plan Start", "予定開始"), "PlanStart")
-    m.Add "PlanEnd", RequireHeaderColumn(headerIndex, Array("PlanEnd", "Plan End", "予定終了"), "PlanEnd")
-    m.Add "ActualStart", RequireHeaderColumn(headerIndex, Array("ActualStart", "Actual Start", "実績開始"), "ActualStart")
-    m.Add "ActualEnd", RequireHeaderColumn(headerIndex, Array("ActualEnd", "Actual End", "実績終了"), "ActualEnd")
-    m.Add "Progress", RequireHeaderColumn(headerIndex, Array("Progress", "進捗"), "Progress")
-    m.Add "Owner", RequireHeaderColumn(headerIndex, Array("Owner", "担当", "担当者"), "Owner")
-    m.Add "Status", RequireHeaderColumn(headerIndex, Array("Status", "状態"), "Status")
+    m.Add "PlanStart", RequireHeaderColumn(headerIndex, Array("PlanStart", "Plan Start"), "PlanStart")
+    m.Add "PlanEnd", RequireHeaderColumn(headerIndex, Array("PlanEnd", "Plan End"), "PlanEnd")
+    m.Add "ActualStart", RequireHeaderColumn(headerIndex, Array("ActualStart", "Actual Start"), "ActualStart")
+    m.Add "ActualEnd", RequireHeaderColumn(headerIndex, Array("ActualEnd", "Actual End"), "ActualEnd")
+    m.Add "Progress", RequireHeaderColumn(headerIndex, Array("Progress"), "Progress")
+    m.Add "Owner", RequireHeaderColumn(headerIndex, Array("Owner"), "Owner")
+    m.Add "Status", RequireHeaderColumn(headerIndex, Array("Status"), "Status")
     
     Dim taskIdCol As Long
-    taskIdCol = FindHeaderColumn(headerIndex, Array("TaskID", "Task Id", "ID", "タスクID"))
+    taskIdCol = FindHeaderColumn(headerIndex, Array("TaskID", "Task Id", "ID"))
     If taskIdCol > 0 Then m.Add "TaskID", taskIdCol
     
     Set ResolveInputColumns = m
@@ -265,7 +265,7 @@ Private Function RequireHeaderColumn(ByVal headerIndex As Object, ByVal aliases 
         End If
     Next i
     
-    Err.Raise vbObjectError + 110, , "Inputのヘッダ '" & requiredName & "' が見つかりません。1行目を確認してください。"
+    Err.Raise vbObjectError + 110, , "Header '" & requiredName & "' was not found in Input row 1."
 End Function
 
 Private Function FindHeaderColumn(ByVal headerIndex As Object, ByVal aliases As Variant) As Long
@@ -284,7 +284,7 @@ End Function
 Private Function NormalizeHeader(ByVal s As String) As String
     s = LCase$(Trim$(s))
     s = Replace(s, " ", "")
-    s = Replace(s, "　", "")
+    s = Replace(s, ChrW(&H3000), "")
     s = Replace(s, "_", "")
     NormalizeHeader = s
 End Function
@@ -305,6 +305,154 @@ Private Function GetInputLastRow(ByVal ws As Worksheet, ByVal colMap As Object) 
     GetInputLastRow = maxRow
 End Function
 
+Private Sub SyncLogOrderWithInput()
+    Dim wsInput As Worksheet: Set wsInput = ThisWorkbook.Worksheets(SHEET_INPUT)
+    Dim colMap As Object
+    Set colMap = ResolveInputColumns(wsInput)
+    If Not colMap.Exists("TaskID") Then Exit Sub
+    Dim taskIdOrder As Collection
+    Set taskIdOrder = GetInputTaskIdOrder(wsInput, CLng(colMap("TaskID")), colMap)
+    If taskIdOrder.Count = 0 Then Exit Sub
+    Dim orderMap As Object
+    Set orderMap = CreateObject("Scripting.Dictionary")
+    Dim i As Long
+    For i = 1 To taskIdOrder.Count
+        orderMap(CStr(taskIdOrder(i))) = i
+    Next i
+    Dim wsLog As Worksheet: Set wsLog = ThisWorkbook.Worksheets(SHEET_LOG)
+    Dim logTaskIdCol As Long
+    logTaskIdCol = EnsureLogTaskIdColumn(wsLog)
+    Dim lastCol As Long
+    lastCol = GetSheetLastCol(wsLog)
+    If lastCol < logTaskIdCol Then lastCol = logTaskIdCol
+    Dim lastRow As Long
+    lastRow = GetSheetLastRow(wsLog, lastCol)
+    Dim logSeen As Object
+    Set logSeen = CreateObject("Scripting.Dictionary")
+    Dim r As Long
+    For r = 2 To lastRow
+        Dim key As String
+        key = NormalizeTaskId(wsLog.Cells(r, logTaskIdCol).Value)
+        If key <> "" Then
+            If Not logSeen.Exists(key) Then logSeen.Add key, True
+        End If
+    Next r
+    ' Add missing TaskID rows from Input (keep other columns as-is)
+    For i = 1 To taskIdOrder.Count
+        key = CStr(taskIdOrder(i))
+        If Not logSeen.Exists(key) Then
+            lastRow = lastRow + 1
+            wsLog.Cells(lastRow, logTaskIdCol).Value = key
+            logSeen.Add key, True
+        End If
+    Next i
+    ' Sort helper column (row-wise sort; preserve all columns B+)
+    Dim helperCol As Long
+    helperCol = lastCol + 1
+    wsLog.Cells(1, helperCol).Value = "__SortOrder"
+    For r = 2 To lastRow
+        key = NormalizeTaskId(wsLog.Cells(r, logTaskIdCol).Value)
+        If key <> "" And orderMap.Exists(key) Then
+            wsLog.Cells(r, helperCol).Value = CDbl(orderMap(key)) * 1000000# + CDbl(r)
+        Else
+            wsLog.Cells(r, helperCol).Value = 1000000000# + r
+        End If
+    Next r
+    With wsLog.Sort
+        .SortFields.Clear
+        .SortFields.Add Key:=wsLog.Range(wsLog.Cells(2, helperCol), wsLog.Cells(lastRow, helperCol)), _
+            SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
+        .SetRange wsLog.Range(wsLog.Cells(1, 1), wsLog.Cells(lastRow, helperCol))
+        .Header = xlYes
+        .MatchCase = False
+        .Orientation = xlTopToBottom
+        .Apply
+    End With
+    wsLog.Columns(helperCol).Delete
+End Sub
+
+Private Function GetSheetLastCol(ByVal ws As Worksheet) As Long
+    Dim lastCell As Range
+    On Error Resume Next
+    Set lastCell = ws.Cells.Find(What:="*", After:=ws.Cells(1, 1), LookIn:=xlFormulas, _
+                                 LookAt:=xlPart, SearchOrder:=xlByColumns, _
+                                 SearchDirection:=xlPrevious, MatchCase:=False)
+    On Error GoTo 0
+    
+    If lastCell Is Nothing Then
+        GetSheetLastCol = 1
+    Else
+        GetSheetLastCol = lastCell.Column
+    End If
+End Function
+
+Private Function GetInputTaskIdOrder(ByVal ws As Worksheet, ByVal taskIdCol As Long, ByVal colMap As Object) As Collection
+    Dim result As Collection
+    Set result = New Collection
+    
+    Dim seen As Object
+    Set seen = CreateObject("Scripting.Dictionary")
+    
+    Dim lastRow As Long
+    lastRow = GetInputLastRow(ws, colMap)
+    
+    Dim r As Long
+    For r = 2 To lastRow
+        If Not IsRowEmpty(ws, r, colMap) Then
+            Dim key As String
+            key = NormalizeTaskId(ws.Cells(r, taskIdCol).Value)
+            If key <> "" Then
+                If Not seen.Exists(key) Then
+                    seen.Add key, True
+                    result.Add key
+                End If
+            End If
+        End If
+    Next r
+    
+    Set GetInputTaskIdOrder = result
+End Function
+
+Private Function EnsureLogTaskIdColumn(ByVal wsLog As Worksheet) As Long
+    Dim headerIndex As Object
+    Set headerIndex = BuildHeaderIndex(wsLog)
+    
+    Dim c As Long
+    c = FindHeaderColumn(headerIndex, Array("TaskID", "Task Id", "ID"))
+    If c > 0 Then
+        EnsureLogTaskIdColumn = c
+        Exit Function
+    End If
+    
+    wsLog.Columns(1).Insert
+    wsLog.Cells(1, 1).Value = "TaskID"
+    EnsureLogTaskIdColumn = 1
+End Function
+
+Private Function GetSheetLastRow(ByVal ws As Worksheet, ByVal lastCol As Long) As Long
+    Dim maxRow As Long
+    maxRow = 1
+    
+    Dim c As Long
+    For c = 1 To lastCol
+        Dim r As Long
+        r = ws.Cells(ws.Rows.Count, c).End(xlUp).Row
+        If r > maxRow Then maxRow = r
+    Next c
+    
+    GetSheetLastRow = maxRow
+End Function
+
+Private Function CreateEmptyRowValues(ByVal lastCol As Long) As Variant
+    Dim arr() As Variant
+    ReDim arr(1 To 1, 1 To lastCol)
+    CreateEmptyRowValues = arr
+End Function
+
+Private Function NormalizeTaskId(ByVal v As Variant) As String
+    NormalizeTaskId = Trim$(CStr(v))
+End Function
+
 Private Sub EnsureNode(ByVal nodes As Object, ByVal children As Object, ByVal path As String, ByVal parentPath As String, _
                        ByVal level As Long, ByVal project As String, ByVal name As String, ByVal isLeaf As Boolean, _
                        ByRef nextId As Long)
@@ -312,7 +460,7 @@ Private Sub EnsureNode(ByVal nodes As Object, ByVal children As Object, ByVal pa
         Dim n As Object: Set n = CreateObject("Scripting.Dictionary")
         n("TaskID") = nextId: nextId = nextId + 1
         n("ParentPath") = parentPath
-        n("ParentID") = 0 ' 後で解決
+        n("ParentID") = 0 ' Resolve later
         n("Level") = level
         n("Project") = project
         n("Path") = path
@@ -362,7 +510,7 @@ Private Function NormalizeProgress(ByVal v As Variant) As Variant
 End Function
 
 '========================
-' 親のPlan/Actual期間を集約、ParentID解決
+' Aggregate parent Plan/Actual dates and resolve ParentID
 '========================
 Private Sub AggregateParentDates(ByVal nodes As Object, ByVal children As Object)
     Dim lvl As Long
@@ -383,7 +531,7 @@ Private Sub AggregateParentDates(ByVal nodes As Object, ByVal children As Object
                     For i = 1 To c.Count
                         Dim ch As Object: Set ch = nodes(c(i))
                         
-                        ' Plan集約（必須扱い）
+                        ' Aggregate Plan
                         If Not IsEmpty(ch("PlanStart")) Then
                             If IsEmpty(minPlanS) Then
                                 minPlanS = ch("PlanStart")
@@ -399,7 +547,7 @@ Private Sub AggregateParentDates(ByVal nodes As Object, ByVal children As Object
                             End If
                         End If
                         
-                        ' Actual集約（あるものだけ）
+                        ' Aggregate Actual (only existing values)
                         If Not IsEmpty(ch("ActStart")) Then
                             If IsEmpty(minActS) Then
                                 minActS = ch("ActStart")
@@ -425,7 +573,7 @@ Private Sub AggregateParentDates(ByVal nodes As Object, ByVal children As Object
         Next k
     Next lvl
     
-    ' ParentID解決
+    ' Resolve ParentID
     Dim kk As Variant
     For Each kk In nodes.Keys
         Dim nn As Object: Set nn = nodes(kk)
@@ -439,7 +587,7 @@ Private Sub AggregateParentDates(ByVal nodes As Object, ByVal children As Object
 End Sub
 
 '========================
-' Masterシート出力
+' Output Master sheet
 '========================
 Private Sub WriteMasterSheet(ByVal nodes As Object)
     Dim ws As Worksheet: Set ws = ThisWorkbook.Worksheets(SHEET_MASTER)
@@ -500,7 +648,7 @@ Private Sub WriteMasterSheet(ByVal nodes As Object)
 End Sub
 
 '========================
-' Gantt生成（同一行：予定バー＋実績バー重ね）
+' Build Gantt (Plan + Actual overlay in same row)
 '========================
 Private Sub BuildGanttSheet(ByVal nodes As Object, ByVal children As Object)
     Dim ws As Worksheet: Set ws = ThisWorkbook.Worksheets(SHEET_GANTT)
@@ -510,7 +658,7 @@ Private Sub BuildGanttSheet(ByVal nodes As Object, ByVal children As Object)
     Dim actualStyle As String
     actualStyle = GetActualStyle()
     
-    ' 期間範囲（Planを基本、Actualも考慮）
+    ' Determine axis date range (Plan + Actual)
     Dim minS As Variant, maxE As Variant
     minS = Empty: maxE = Empty
     
@@ -536,12 +684,12 @@ Private Sub BuildGanttSheet(ByVal nodes As Object, ByVal children As Object)
         Dim maxDays As Long
         maxDays = Columns.Count - col0 + 1
         If totalDays > maxDays Then
-            ' 列上限を超える場合は表示可能な範囲までに自動短縮
+            ' Clip to max displayable columns
             endDate = DateAdd("d", maxDays - 1, startDate)
         End If
     End If
     
-    ' ヘッダ（3段）
+    ' Header rows
     Dim h As Long
     For h = 1 To MAX_LEVEL
         ws.Cells(3, h).Value = "L" & CStr(h)
@@ -572,7 +720,7 @@ Private Sub BuildGanttSheet(ByVal nodes As Object, ByVal children As Object)
         lastDateCol = col0 - 1
     End If
     
-    ' ルート(Level=1)をTaskID順でDFS
+    ' DFS order from Level=1 roots sorted by TaskID
     Dim roots As Collection: Set roots = New Collection
     For Each k In nodes.Keys
         If CLng(nodes(k)("Level")) = 1 Then roots.Add CStr(k)
@@ -585,9 +733,9 @@ Private Sub BuildGanttSheet(ByVal nodes As Object, ByVal children As Object)
         DFSAppend nodes, children, roots(i), order
     Next i
     
-    ' バーの表現（同一行で重ねる）
-    ' - Plan: 薄い塗り
-    ' - Actual: □を記入
+    ' Bar style (same row overlay)
+    ' - Plan: light fill
+    ' - Actual: square/border
     Dim planColor As Long: planColor = RGB(200, 220, 240)
     Dim parentPlanColor As Long: parentPlanColor = RGB(235, 242, 250)
     
@@ -609,7 +757,7 @@ Private Sub BuildGanttSheet(ByVal nodes As Object, ByVal children As Object)
         End If
         
         If prevL1 <> "" And currentL1 <> prevL1 Then
-            row = row + 1 ' L1切替時に1行空ける
+            row = row + 1 ' add one blank row when L1 changes
             With ws.Range(ws.Cells(row, 1), ws.Cells(row, lastDateCol)).Borders(xlEdgeTop)
                 .LineStyle = xlContinuous
                 .Weight = xlThick
@@ -632,21 +780,21 @@ Private Sub BuildGanttSheet(ByVal nodes As Object, ByVal children As Object)
         ws.Cells(row, MAX_LEVEL + 6).Value = n2("Owner")
         ws.Cells(row, MAX_LEVEL + 7).Value = n2("Status")
         
-        ' まずPlanバー
+        ' Plan bar
         If Not IsEmpty(n2("PlanStart")) And Not IsEmpty(n2("PlanEnd")) Then
             DrawBar ws, row, col0, startDate, CDate(n2("PlanStart")), CDate(n2("PlanEnd")), _
                     IIf(CBool(n2("IsLeaf")), planColor, parentPlanColor), False, xlPatternSolid
         End If
         
-        ' 次にActualバー（同一行で上書き）
-        ' ActualEndが無ければ「今日」までとして表示（着手中の見える化）
+        ' Actual bar
+        ' If ActualEnd is empty, show until today
         If Not IsEmpty(n2("ActStart")) Then
             Dim aStart As Date: aStart = CDate(n2("ActStart"))
             Dim aEnd As Date
             If Not IsEmpty(n2("ActEnd")) Then
                 aEnd = CDate(n2("ActEnd"))
             Else
-                aEnd = Date ' 今日
+                aEnd = Date ' Today
             End If
             If aEnd < aStart Then aEnd = aStart
             
@@ -686,7 +834,7 @@ ContinueGanttRow:
         ws.Range(ws.Cells(1, col0), ws.Cells(1, col0 + DateDiff("d", startDate, endDate))).ColumnWidth = 3
     End If
     ws.Columns.AutoFit
-    ' Selectはアクティブシート依存で1004になりやすいので実行しない
+    ' Avoid Select to prevent active-sheet dependent 1004 errors
 End Sub
 
 Private Sub EnsureSettingsSheet()
@@ -752,7 +900,7 @@ Private Sub DrawActualBorders(ByVal ws As Worksheet, ByVal row As Long, ByVal co
     
     rg.Value = ""
     
-    ' 開始〜終了を1つの枠として描画
+    ' Draw one outer border from start to end
     With rg.Borders(xlEdgeLeft)
         .LineStyle = xlContinuous
         .Weight = xlThin
@@ -906,7 +1054,7 @@ Private Sub SortPathsByTaskId(ByVal nodes As Object, ByVal col As Collection)
 End Sub
 
 '========================
-' JSONエクスポート（Plan/Actual対応）
+' JSON export (Plan/Actual)
 '========================
 Private Sub ExportJson(ByVal nodes As Object, ByVal children As Object)
     Dim projects As Object: Set projects = CreateObject("Scripting.Dictionary")
@@ -949,7 +1097,7 @@ Private Sub ExportJson(ByVal nodes As Object, ByVal children As Object)
     json = json & "]}"
 
     If ThisWorkbook.Path = "" Then
-        Err.Raise vbObjectError + 300, , "JSON出力先が未確定です。先にブックを保存してから再実行してください。"
+        Err.Raise vbObjectError + 300, , "JSON output path is not available. Save this workbook first."
     End If
     
     Dim outPath As String
@@ -1025,3 +1173,4 @@ Private Sub WriteTextFile(ByVal path As String, ByVal text As String)
     ts.Write text
     ts.Close
 End Sub
+
