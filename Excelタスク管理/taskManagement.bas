@@ -124,15 +124,16 @@ Private Sub BuildMasterFromInput(ByVal nodes As Object, ByVal children As Object
         
         Dim pj As String: pj = lv(1)
         
-        ' 日付（Planは必須、Actualは任意）
+        ' 日付（Planは任意、Actualは任意）
         Dim ps As Variant, pe As Variant
         ps = ws.Cells(r, COL_PLAN_START).Value
         pe = ws.Cells(r, COL_PLAN_END).Value
-        If Not IsDate(ps) Or Not IsDate(pe) Then
-            Err.Raise vbObjectError + 101, , "PlanStart/PlanEndが日付ではありません。行 " & r
-        End If
-        If CDate(ps) > CDate(pe) Then
-            Err.Raise vbObjectError + 102, , "PlanStart > PlanEnd です。行 " & r
+        Dim hasPlanStart As Boolean: hasPlanStart = IsDate(ps)
+        Dim hasPlanEnd As Boolean: hasPlanEnd = IsDate(pe)
+        If hasPlanStart And hasPlanEnd Then
+            If CDate(ps) > CDate(pe) Then
+                Err.Raise vbObjectError + 102, , "PlanStart > PlanEnd です。行 " & r
+            End If
         End If
         
         Dim asv As Variant, aev As Variant
@@ -168,8 +169,13 @@ Private Sub BuildMasterFromInput(ByVal nodes As Object, ByVal children As Object
         ' Leaf属性
         Dim leafPath As String: leafPath = path(MAX_LEVEL)
         Dim n As Object: Set n = nodes(leafPath)
-        n("PlanStart") = CDate(ps)
-        n("PlanEnd") = CDate(pe)
+        If hasPlanStart Then
+            n("PlanStart") = CDate(ps)
+            n("PlanEnd") = CDate(pe)
+        Else
+            n("PlanStart") = Empty
+            n("PlanEnd") = Empty
+        End If
         
         If hasActStart Then n("ActStart") = CDate(asv) Else n("ActStart") = Empty
         If hasActEnd Then n("ActEnd") = CDate(aev) Else n("ActEnd") = Empty
@@ -392,6 +398,7 @@ End Sub
 '========================
 Private Sub BuildGanttSheet(ByVal nodes As Object, ByVal children As Object)
     Dim ws As Worksheet: Set ws = ThisWorkbook.Worksheets(SHEET_GANTT)
+    ws.Cells.UnMerge
     ws.Cells.Clear
     
     Dim actualStyle As String
@@ -408,13 +415,25 @@ Private Sub BuildGanttSheet(ByVal nodes As Object, ByVal children As Object)
         UpdateMinMaxDate minS, maxE, n("ActStart"), n("ActEnd")
     Next k
     
-    If IsEmpty(minS) Or IsEmpty(maxE) Then
-        Err.Raise vbObjectError + 200, , "ガント期間が決まりません。InputのPlanStart/PlanEndを確認してください。"
+    Dim startDate As Date, endDate As Date
+    Dim hasAxis As Boolean
+    hasAxis = (Not IsEmpty(minS) And Not IsEmpty(maxE))
+    If hasAxis Then
+        startDate = CDate(minS)
+        endDate = CDate(maxE)
     End If
     
-    Dim startDate As Date, endDate As Date
-    startDate = CDate(minS)
-    endDate = CDate(maxE)
+    Dim col0 As Long: col0 = MAX_LEVEL + 8
+    If hasAxis Then
+        Dim totalDays As Long
+        totalDays = DateDiff("d", startDate, endDate) + 1
+        Dim maxDays As Long
+        maxDays = Columns.Count - col0 + 1
+        If totalDays > maxDays Then
+            ' 列上限を超える場合は表示可能な範囲までに自動短縮
+            endDate = DateAdd("d", maxDays - 1, startDate)
+        End If
+    End If
     
     ' ヘッダ（3段）
     Dim h As Long
@@ -429,19 +448,23 @@ Private Sub BuildGanttSheet(ByVal nodes As Object, ByVal children As Object)
     ws.Cells(3, MAX_LEVEL + 6).Value = "Owner"
     ws.Cells(3, MAX_LEVEL + 7).Value = "Status"
     
-    Dim d As Date, col0 As Long: col0 = MAX_LEVEL + 8
-    Dim c As Long: c = col0
-    For d = startDate To endDate
-        ws.Cells(1, c).Value = Format$(d, "yyyy")
-        ws.Cells(2, c).Value = Format$(d, "mm")
-        ws.Cells(3, c).Value = Format$(d, "dd")
-        c = c + 1
-    Next d
-    
     Dim lastDateCol As Long
-    lastDateCol = col0 + DateDiff("d", startDate, endDate)
-    MergeSameValueAcrossRow ws, 1, col0, lastDateCol ' YYYY
-    MergeSameValueAcrossRow ws, 2, col0, lastDateCol ' MM
+    If hasAxis Then
+        Dim d As Date
+        Dim c As Long: c = col0
+        For d = startDate To endDate
+            ws.Cells(1, c).Value = Format$(d, "yyyy")
+            ws.Cells(2, c).Value = Format$(d, "mm")
+            ws.Cells(3, c).Value = Format$(d, "dd")
+            c = c + 1
+        Next d
+        
+        lastDateCol = col0 + DateDiff("d", startDate, endDate)
+        MergeSameValueAcrossRow ws, 1, col0, lastDateCol ' YYYY
+        MergeSameValueAcrossRow ws, 2, col0, lastDateCol ' MM
+    Else
+        lastDateCol = col0 - 1
+    End If
     
     ' ルート(Level=1)をTaskID順でDFS
     Dim roots As Collection: Set roots = New Collection
@@ -534,7 +557,9 @@ ContinueGanttRow:
     
     Dim lastTaskRow As Long
     lastTaskRow = row - 1
-    ShadeWeekendColumns ws, col0, startDate, endDate, lastTaskRow
+    If hasAxis Then
+        ShadeWeekendColumns ws, col0, startDate, endDate, lastTaskRow
+    End If
     
     ws.Rows(1).Font.Bold = True
     ws.Rows(2).Font.Bold = True
@@ -551,7 +576,9 @@ ContinueGanttRow:
     ws.Columns(MAX_LEVEL + 6).ColumnWidth = 12
     ws.Columns(MAX_LEVEL + 7).ColumnWidth = 12
     
-    ws.Range(ws.Cells(1, col0), ws.Cells(1, col0 + DateDiff("d", startDate, endDate))).ColumnWidth = 3
+    If hasAxis Then
+        ws.Range(ws.Cells(1, col0), ws.Cells(1, col0 + DateDiff("d", startDate, endDate))).ColumnWidth = 3
+    End If
     ws.Columns.AutoFit
     ' Selectはアクティブシート依存で1004になりやすいので実行しない
 End Sub
