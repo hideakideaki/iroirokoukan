@@ -10,6 +10,8 @@ Private Const SHEET_SETTINGS As String = "Settings"
 Private Const SHEET_LOG As String = "Log"
 
 Private Const SETTING_KEY_ACTUAL_STYLE As String = "ActualStyle"
+Private Const SETTING_KEY_INPUT_HEADER_ROW As String = "InputHeaderRow"
+Private Const SETTING_KEY_LOG_EXPORT_PATH As String = "LogExportPath"
 Private Const ACTUAL_STYLE_SQUARE As String = "SQUARE"
 Private Const ACTUAL_STYLE_BORDER As String = "BORDER"
 
@@ -104,14 +106,17 @@ End Sub
 '========================
 Private Sub BuildMasterFromInput(ByVal nodes As Object, ByVal children As Object, ByRef nextId As Long)
     Dim ws As Worksheet: Set ws = ThisWorkbook.Worksheets(SHEET_INPUT)
+    Dim inputHeaderRow As Long
+    inputHeaderRow = GetInputHeaderRow()
+
     Dim colMap As Object
-    Set colMap = ResolveInputColumns(ws)
+    Set colMap = ResolveInputColumns(ws, inputHeaderRow)
     
     Dim lastRow As Long
     lastRow = GetInputLastRow(ws, colMap)
     
     Dim r As Long
-    For r = 2 To lastRow
+    For r = inputHeaderRow + 1 To lastRow
         ' Skip completely empty row
         If IsRowEmpty(ws, r, colMap) Then GoTo ContinueRow
         
@@ -206,25 +211,25 @@ Private Function IsRowEmpty(ByVal ws As Worksheet, ByVal r As Long, ByVal colMap
     IsRowEmpty = True
 End Function
 
-Private Function ResolveInputColumns(ByVal ws As Worksheet) As Object
+Private Function ResolveInputColumns(ByVal ws As Worksheet, Optional ByVal headerRow As Long = 1) As Object
     Dim headerIndex As Object
-    Set headerIndex = BuildHeaderIndex(ws)
+    Set headerIndex = BuildHeaderIndex(ws, headerRow)
     
     Dim m As Object
     Set m = CreateObject("Scripting.Dictionary")
     
     Dim i As Long
     For i = 1 To MAX_LEVEL
-        m.Add "L" & CStr(i), RequireHeaderColumn(headerIndex, Array("L" & CStr(i), "Level" & CStr(i), "Hierarchy" & CStr(i)), "L" & CStr(i))
+        m.Add "L" & CStr(i), RequireHeaderColumn(headerIndex, Array("L" & CStr(i), "Level" & CStr(i), "Hierarchy" & CStr(i)), "L" & CStr(i), headerRow)
     Next i
     
-    m.Add "PlanStart", RequireHeaderColumn(headerIndex, Array("PlanStart", "Plan Start"), "PlanStart")
-    m.Add "PlanEnd", RequireHeaderColumn(headerIndex, Array("PlanEnd", "Plan End"), "PlanEnd")
-    m.Add "ActualStart", RequireHeaderColumn(headerIndex, Array("ActualStart", "Actual Start"), "ActualStart")
-    m.Add "ActualEnd", RequireHeaderColumn(headerIndex, Array("ActualEnd", "Actual End"), "ActualEnd")
-    m.Add "Progress", RequireHeaderColumn(headerIndex, Array("Progress"), "Progress")
-    m.Add "Owner", RequireHeaderColumn(headerIndex, Array("Owner"), "Owner")
-    m.Add "Status", RequireHeaderColumn(headerIndex, Array("Status"), "Status")
+    m.Add "PlanStart", RequireHeaderColumn(headerIndex, Array("PlanStart", "Plan Start"), "PlanStart", headerRow)
+    m.Add "PlanEnd", RequireHeaderColumn(headerIndex, Array("PlanEnd", "Plan End"), "PlanEnd", headerRow)
+    m.Add "ActualStart", RequireHeaderColumn(headerIndex, Array("ActualStart", "Actual Start"), "ActualStart", headerRow)
+    m.Add "ActualEnd", RequireHeaderColumn(headerIndex, Array("ActualEnd", "Actual End"), "ActualEnd", headerRow)
+    m.Add "Progress", RequireHeaderColumn(headerIndex, Array("Progress"), "Progress", headerRow)
+    m.Add "Owner", RequireHeaderColumn(headerIndex, Array("Owner"), "Owner", headerRow)
+    m.Add "Status", RequireHeaderColumn(headerIndex, Array("Status"), "Status", headerRow)
     
     Dim taskIdCol As Long
     taskIdCol = FindHeaderColumn(headerIndex, Array("TaskID", "Task Id", "ID"))
@@ -233,17 +238,17 @@ Private Function ResolveInputColumns(ByVal ws As Worksheet) As Object
     Set ResolveInputColumns = m
 End Function
 
-Private Function BuildHeaderIndex(ByVal ws As Worksheet) As Object
+Private Function BuildHeaderIndex(ByVal ws As Worksheet, Optional ByVal headerRow As Long = 1) As Object
     Dim idx As Object
     Set idx = CreateObject("Scripting.Dictionary")
     
     Dim lastCol As Long
-    lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+    lastCol = ws.Cells(headerRow, ws.Columns.Count).End(xlToLeft).Column
     
     Dim c As Long
     For c = 1 To lastCol
         Dim raw As String
-        raw = CStr(ws.Cells(1, c).Value)
+        raw = CStr(ws.Cells(headerRow, c).Value)
         If Trim$(raw) <> "" Then
             Dim key As String
             key = NormalizeHeader(raw)
@@ -254,7 +259,7 @@ Private Function BuildHeaderIndex(ByVal ws As Worksheet) As Object
     Set BuildHeaderIndex = idx
 End Function
 
-Private Function RequireHeaderColumn(ByVal headerIndex As Object, ByVal aliases As Variant, ByVal requiredName As String) As Long
+Private Function RequireHeaderColumn(ByVal headerIndex As Object, ByVal aliases As Variant, ByVal requiredName As String, Optional ByVal headerRow As Long = 1) As Long
     Dim i As Long
     For i = LBound(aliases) To UBound(aliases)
         Dim k As String
@@ -265,7 +270,7 @@ Private Function RequireHeaderColumn(ByVal headerIndex As Object, ByVal aliases 
         End If
     Next i
     
-    Err.Raise vbObjectError + 110, , "Header '" & requiredName & "' was not found in Input row 1."
+    Err.Raise vbObjectError + 110, , "Header '" & requiredName & "' was not found in Input row " & headerRow & "."
 End Function
 
 Private Function FindHeaderColumn(ByVal headerIndex As Object, ByVal aliases As Variant) As Long
@@ -307,11 +312,14 @@ End Function
 
 Private Sub SyncLogOrderWithInput()
     Dim wsInput As Worksheet: Set wsInput = ThisWorkbook.Worksheets(SHEET_INPUT)
+    Dim inputHeaderRow As Long
+    inputHeaderRow = GetInputHeaderRow()
+
     Dim colMap As Object
-    Set colMap = ResolveInputColumns(wsInput)
+    Set colMap = ResolveInputColumns(wsInput, inputHeaderRow)
     If Not colMap.Exists("TaskID") Then Exit Sub
     Dim taskIdOrder As Collection
-    Set taskIdOrder = GetInputTaskIdOrder(wsInput, CLng(colMap("TaskID")), colMap)
+    Set taskIdOrder = GetInputTaskIdOrder(wsInput, CLng(colMap("TaskID")), colMap, inputHeaderRow + 1)
     If taskIdOrder.Count = 0 Then Exit Sub
     Dim orderMap As Object
     Set orderMap = CreateObject("Scripting.Dictionary")
@@ -386,7 +394,7 @@ Private Function GetSheetLastCol(ByVal ws As Worksheet) As Long
     End If
 End Function
 
-Private Function GetInputTaskIdOrder(ByVal ws As Worksheet, ByVal taskIdCol As Long, ByVal colMap As Object) As Collection
+Private Function GetInputTaskIdOrder(ByVal ws As Worksheet, ByVal taskIdCol As Long, ByVal colMap As Object, ByVal firstDataRow As Long) As Collection
     Dim result As Collection
     Set result = New Collection
     
@@ -397,7 +405,7 @@ Private Function GetInputTaskIdOrder(ByVal ws As Worksheet, ByVal taskIdCol As L
     lastRow = GetInputLastRow(ws, colMap)
     
     Dim r As Long
-    For r = 2 To lastRow
+    For r = firstDataRow To lastRow
         If Not IsRowEmpty(ws, r, colMap) Then
             Dim key As String
             key = NormalizeTaskId(ws.Cells(r, taskIdCol).Value)
@@ -845,10 +853,60 @@ Private Sub EnsureSettingsSheet()
     If Trim$(CStr(ws.Cells(2, 1).Value)) = "" Then ws.Cells(2, 1).Value = SETTING_KEY_ACTUAL_STYLE
     If Trim$(CStr(ws.Cells(2, 2).Value)) = "" Then ws.Cells(2, 2).Value = ACTUAL_STYLE_SQUARE
     
+    EnsureSettingValue ws, SETTING_KEY_INPUT_HEADER_ROW, "1"
+    EnsureSettingValue ws, SETTING_KEY_LOG_EXPORT_PATH, ""
+    
     ws.Cells(1, 4).Value = "ActualStyle options:"
     ws.Cells(2, 4).Value = ACTUAL_STYLE_SQUARE
     ws.Cells(3, 4).Value = ACTUAL_STYLE_BORDER
+    ws.Cells(5, 4).Value = "InputHeaderRow:"
+    ws.Cells(6, 4).Value = "1"
+    ws.Cells(8, 4).Value = "LogExportPath:"
+    ws.Cells(9, 4).Value = "(blank = workbook folder\\YYYYMMDD_HHMMSS.json)"
 End Sub
+
+Private Sub EnsureSettingValue(ByVal ws As Worksheet, ByVal keyName As String, ByVal defaultValue As String)
+    Dim lastRow As Long
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    
+    Dim r As Long
+    For r = 2 To lastRow
+        If UCase$(Trim$(CStr(ws.Cells(r, 1).Value))) = UCase$(keyName) Then
+            If Trim$(CStr(ws.Cells(r, 2).Value)) = "" Then ws.Cells(r, 2).Value = defaultValue
+            Exit Sub
+        End If
+    Next r
+    
+    ws.Cells(lastRow + 1, 1).Value = keyName
+    ws.Cells(lastRow + 1, 2).Value = defaultValue
+End Sub
+
+Private Function GetInputHeaderRow() As Long
+    Dim ws As Worksheet: Set ws = ThisWorkbook.Worksheets(SHEET_SETTINGS)
+    Dim lastRow As Long: lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    
+    Dim r As Long
+    For r = 2 To lastRow
+        If UCase$(Trim$(CStr(ws.Cells(r, 1).Value))) = UCase$(SETTING_KEY_INPUT_HEADER_ROW) Then
+            Dim raw As String
+            raw = Trim$(CStr(ws.Cells(r, 2).Value))
+            If raw = "" Then
+                GetInputHeaderRow = 1
+                Exit Function
+            End If
+            If Not IsNumeric(raw) Then
+                Err.Raise vbObjectError + 111, , "InputHeaderRow must be a positive integer."
+            End If
+            GetInputHeaderRow = CLng(raw)
+            If GetInputHeaderRow < 1 Then
+                Err.Raise vbObjectError + 111, , "InputHeaderRow must be a positive integer."
+            End If
+            Exit Function
+        End If
+    Next r
+    
+    GetInputHeaderRow = 1
+End Function
 
 Private Function GetActualStyle() As String
     Dim ws As Worksheet: Set ws = ThisWorkbook.Worksheets(SHEET_SETTINGS)
@@ -1096,14 +1154,89 @@ Private Sub ExportJson(ByVal nodes As Object, ByVal children As Object)
     
     json = json & "]}"
 
-    If ThisWorkbook.Path = "" Then
-        Err.Raise vbObjectError + 300, , "JSON output path is not available. Save this workbook first."
-    End If
-    
     Dim outPath As String
-    outPath = ThisWorkbook.Path & "\tasks_backup.json"
+    outPath = GetLogExportPath()
     WriteTextFile outPath, json
 End Sub
+
+Private Function GetLogExportPath() As String
+    Dim ws As Worksheet: Set ws = ThisWorkbook.Worksheets(SHEET_SETTINGS)
+    Dim lastRow As Long: lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    
+    Dim rawPath As String
+    rawPath = ""
+    
+    Dim r As Long
+    For r = 2 To lastRow
+        If UCase$(Trim$(CStr(ws.Cells(r, 1).Value))) = UCase$(SETTING_KEY_LOG_EXPORT_PATH) Then
+            rawPath = Trim$(CStr(ws.Cells(r, 2).Value))
+            Exit For
+        End If
+    Next r
+    
+    Dim baseFolder As String
+    baseFolder = ResolveExportBaseFolder(rawPath)
+    GetLogExportPath = baseFolder & "\" & Format$(Now, "yyyymmdd_hhnnss") & ".json"
+End Function
+
+Private Function ResolveExportBaseFolder(ByVal rawPath As String) As String
+    Dim p As String
+    p = Trim$(rawPath)
+    
+    If p = "" Then
+        If ThisWorkbook.Path = "" Then
+            Err.Raise vbObjectError + 300, , "JSON output path is not available. Save this workbook first or set LogExportPath."
+        End If
+        ResolveExportBaseFolder = ThisWorkbook.Path
+        Exit Function
+    End If
+    
+    Dim absPath As Boolean
+    absPath = (InStr(p, ":") > 0 Or Left$(p, 2) = "\\")
+    
+    Dim hasSlash As Boolean
+    hasSlash = (InStr(p, "\") > 0 Or InStr(p, "/") > 0)
+    
+    Dim looksLikeFile As Boolean
+    looksLikeFile = (InStrRev(p, ".") > InStrRev(p, "\") And InStrRev(p, ".") > InStrRev(p, "/"))
+    
+    Dim folderPart As String
+    If looksLikeFile Then
+        Dim posSlash As Long
+        posSlash = InStrRev(p, "\")
+        If posSlash = 0 Then posSlash = InStrRev(p, "/")
+        If posSlash > 0 Then
+            folderPart = Left$(p, posSlash - 1)
+        Else
+            folderPart = ""
+        End If
+        If folderPart = "" Then
+            If ThisWorkbook.Path = "" Then
+                Err.Raise vbObjectError + 300, , "Relative LogExportPath requires a saved workbook."
+            End If
+            ResolveExportBaseFolder = ThisWorkbook.Path
+            Exit Function
+        End If
+        p = folderPart
+    ElseIf Right$(p, 1) = "\" Or Right$(p, 1) = "/" Then
+        p = Left$(p, Len(p) - 1)
+    ElseIf (Not hasSlash) And (Not absPath) Then
+        If ThisWorkbook.Path = "" Then
+            Err.Raise vbObjectError + 300, , "Relative LogExportPath requires a saved workbook."
+        End If
+        ResolveExportBaseFolder = ThisWorkbook.Path & "\" & p
+        Exit Function
+    End If
+    
+    If absPath Then
+        ResolveExportBaseFolder = p
+    Else
+        If ThisWorkbook.Path = "" Then
+            Err.Raise vbObjectError + 300, , "Relative LogExportPath requires a saved workbook."
+        End If
+        ResolveExportBaseFolder = ThisWorkbook.Path & "\" & p
+    End If
+End Function
 
 Private Function NodeToJson(ByVal nodes As Object, ByVal children As Object, ByVal path As String) As String
     Dim n As Object: Set n = nodes(path)
