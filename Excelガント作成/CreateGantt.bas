@@ -237,6 +237,7 @@ Sub RunAll()
     DrawGanttYearMonth
     DrawGanttCompressed
     DrawGanttDaily
+    DrawGanttDailyCompressed
     BuildMilestoneProjTable
 End Sub
 
@@ -844,6 +845,194 @@ Private Sub AppendCellText(ByVal targetCell As Range, ByVal addText As String)
         targetCell.Value = addText
     Else
         targetCell.Value = CStr(targetCell.Value) & " / " & addText
+    End If
+End Sub
+
+Sub DrawGanttDailyCompressed()
+    Dim COLOR_MONTH As Long
+    Dim COLOR_DATE As Long
+    Dim START_YEAR As Long
+    Dim END_YEAR As Long
+    Dim ganttColWidth As Double
+    Dim catColors As Object
+
+    COLOR_MONTH = RGB(255, 242, 204)
+    COLOR_DATE = RGB(198, 239, 206)
+    EnsureSettingSheet
+    START_YEAR = CLng(Worksheets("Setting").Range("B1").Value)
+    END_YEAR = CLng(Worksheets("Setting").Range("B2").Value)
+    ganttColWidth = 2.3
+
+    Dim settingColWidth As Variant
+    Dim settingMonthColor As Variant
+    Dim settingDateColor As Variant
+    settingColWidth = Worksheets("Setting").Range("B3").Value
+    settingMonthColor = Worksheets("Setting").Range("B4").Value
+    settingDateColor = Worksheets("Setting").Range("B5").Value
+    If IsNumeric(settingColWidth) And settingColWidth > 0 Then
+        ganttColWidth = CDbl(settingColWidth)
+    End If
+    COLOR_MONTH = ParseSettingColor(settingMonthColor, COLOR_MONTH)
+    COLOR_DATE = ParseSettingColor(settingDateColor, COLOR_DATE)
+    Set catColors = LoadCategoryColors(Worksheets("Setting"))
+
+    Dim wsN As Worksheet, wsG As Worksheet
+    Dim startDate As Date, endDate As Date, curDate As Date
+    Dim startCol As Long
+    Dim c As Long
+    Dim monthStartCol As Long
+    Dim prevMonthKey As String
+    Dim lastCol As Long
+
+    Set wsN = Worksheets("Normalized")
+    On Error Resume Next
+    Set wsG = Worksheets("Gantt_Daily_Compact")
+    On Error GoTo 0
+    If wsG Is Nothing Then
+        Set wsG = Worksheets.Add(After:=Worksheets(Worksheets.Count))
+        wsG.Name = "Gantt_Daily_Compact"
+    End If
+
+    wsG.Cells.Clear
+    wsG.Cells(2, 1).Value = "Proj"
+    wsG.Cells(2, 2).Value = "仕向け"
+    wsG.Cells(2, 3).Value = "分類"
+    wsG.Cells(2, 4).Value = "Milestone"
+    wsG.Cells(2, 5).Value = "Date"
+
+    startCol = 6
+    startDate = DateSerial(START_YEAR, 1, 1)
+    endDate = DateSerial(END_YEAR, 12, 31)
+
+    c = startCol
+    curDate = startDate
+    prevMonthKey = ""
+    Do While curDate <= endDate
+        If Format$(curDate, "yyyy/m") <> prevMonthKey Then
+            If Len(prevMonthKey) > 0 Then
+                wsG.Range(wsG.Cells(1, monthStartCol), wsG.Cells(1, c - 1)).Merge
+                wsG.Cells(1, monthStartCol).Value = prevMonthKey
+                wsG.Cells(1, monthStartCol).HorizontalAlignment = xlCenter
+            End If
+            monthStartCol = c
+            prevMonthKey = Format$(curDate, "yyyy/m")
+        End If
+        wsG.Cells(2, c).Value = Day(curDate)
+        wsG.Cells(2, c).HorizontalAlignment = xlCenter
+        c = c + 1
+        curDate = curDate + 1
+    Loop
+    If c > startCol Then
+        wsG.Range(wsG.Cells(1, monthStartCol), wsG.Cells(1, c - 1)).Merge
+        wsG.Cells(1, monthStartCol).Value = prevMonthKey
+        wsG.Cells(1, monthStartCol).HorizontalAlignment = xlCenter
+    End If
+
+    lastCol = c - 1
+    wsG.Range(wsG.Cells(1, startCol), wsG.Cells(1, lastCol)).EntireColumn.ColumnWidth = ganttColWidth
+
+    Dim lanes As Collection
+    Dim laneEndCols As Object
+    Dim currentRow As Long
+    Dim prevGroupKey As String
+    Dim r As Long
+
+    Set lanes = New Collection
+    Set laneEndCols = CreateObject("Scripting.Dictionary")
+    currentRow = 3
+    prevGroupKey = ""
+
+    For r = 2 To wsN.Cells(wsN.Rows.Count, 1).End(xlUp).Row
+        Dim yr As Long, mo As Long
+        Dim evStart As Date, evEnd As Date
+        Dim curProj As String, curDest As String, curCat As String
+        Dim groupKey As String
+        Dim startIdx As Long, endIdx As Long
+        Dim eventStartCol As Long, eventEndCol As Long
+        Dim visualEndCol As Long
+        Dim laneIndex As Long
+        Dim targetRow As Long
+        Dim catColor As Variant
+        Dim fillColor As Long
+
+        If Not IsNumeric(wsN.Cells(r, 1).Value) Or Not IsNumeric(wsN.Cells(r, 2).Value) Then GoTo NextDailyCompactRow
+        yr = CLng(wsN.Cells(r, 1).Value)
+        mo = CLng(wsN.Cells(r, 2).Value)
+        If yr < START_YEAR Or yr > END_YEAR Then GoTo NextDailyCompactRow
+        If mo < 1 Or mo > 12 Then GoTo NextDailyCompactRow
+        If Not TryGetNormalizedDateRange(wsN, r, evStart, evEnd) Then GoTo NextDailyCompactRow
+
+        curProj = CStr(wsN.Cells(r, 8).Value)
+        curDest = CStr(wsN.Cells(r, 9).Value)
+        curCat = CStr(wsN.Cells(r, 10).Value)
+        groupKey = curProj & "|" & curDest & "|" & curCat
+
+        If Len(prevGroupKey) > 0 And groupKey <> prevGroupKey Then
+            currentRow = currentRow + 1
+            With wsG.Range(wsG.Cells(currentRow, 1), wsG.Cells(currentRow, lastCol)).Borders(xlEdgeTop)
+                .LineStyle = xlContinuous
+                .Weight = xlThick
+            End With
+            Set lanes = New Collection
+            Set laneEndCols = CreateObject("Scripting.Dictionary")
+        End If
+        prevGroupKey = groupKey
+
+        startIdx = DateDiff("d", startDate, evStart)
+        endIdx = DateDiff("d", startDate, evEnd)
+        If endIdx < 0 Or startIdx > (lastCol - startCol) Then GoTo NextDailyCompactRow
+        If startIdx < 0 Then startIdx = 0
+        If endIdx > (lastCol - startCol) Then endIdx = (lastCol - startCol)
+
+        eventStartCol = startCol + startIdx
+        eventEndCol = startCol + endIdx
+        visualEndCol = GetVisualEndCol(eventStartCol, eventEndCol, CStr(wsN.Cells(r, 4).Value), ganttColWidth)
+
+        laneIndex = FindAvailableLaneIndex(laneEndCols, lanes.Count, eventStartCol)
+        If laneIndex = 0 Then
+            targetRow = currentRow
+            lanes.Add targetRow
+            laneEndCols(CStr(lanes.Count)) = visualEndCol
+            currentRow = currentRow + 1
+            laneIndex = lanes.Count
+            wsG.Cells(targetRow, 1).Value = curProj
+            wsG.Cells(targetRow, 2).Value = curDest
+            wsG.Cells(targetRow, 3).Value = curCat
+            If laneIndex > 1 Then
+                wsG.Cells(targetRow, 1).Font.Color = RGB(180, 180, 180)
+                wsG.Cells(targetRow, 2).Font.Color = RGB(180, 180, 180)
+                wsG.Cells(targetRow, 3).Font.Color = RGB(180, 180, 180)
+            End If
+        Else
+            targetRow = CLng(lanes(laneIndex))
+            laneEndCols(CStr(laneIndex)) = visualEndCol
+        End If
+
+        AppendCellText wsG.Cells(targetRow, 4), CStr(wsN.Cells(r, 6).Value)
+        AppendCellText wsG.Cells(targetRow, 5), Format(evStart, "yyyy/m/d") & " - " & Format(evEnd, "yyyy/m/d")
+
+        catColor = GetCategoryColor(catColors, curCat)
+        If Not IsEmpty(catColor) Then
+            fillColor = CLng(catColor)
+        ElseIf CStr(wsN.Cells(r, 5).Value) = "MONTH" Then
+            fillColor = COLOR_MONTH
+        Else
+            fillColor = COLOR_DATE
+        End If
+
+        wsG.Range(wsG.Cells(targetRow, eventStartCol), wsG.Cells(targetRow, eventEndCol)).Interior.Color = fillColor
+        With wsG.Cells(targetRow, eventStartCol)
+            .Value = wsN.Cells(r, 4).Value
+            .WrapText = False
+            .HorizontalAlignment = xlLeft
+        End With
+NextDailyCompactRow:
+    Next
+
+    Dim lastDataRow As Long
+    lastDataRow = currentRow - 1
+    If lastDataRow >= 2 Then
+        wsG.Range(wsG.Cells(2, 1), wsG.Cells(lastDataRow, startCol - 1)).AutoFilter
     End If
 End Sub
 
