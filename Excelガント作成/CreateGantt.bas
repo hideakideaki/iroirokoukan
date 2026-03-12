@@ -899,41 +899,28 @@ Sub DrawGanttDaily()
 
     Dim c As Long: c = startCol
     curDate = startDate
-    Dim yearStartCol As Long, monthStartCol As Long
-    Dim prevYear As Long, prevMonth As Long
-    prevYear = -1
-    prevMonth = -1
+    Dim monthStartCol As Long
+    Dim prevMonthKey As String
+    prevMonthKey = ""
     Do While curDate <= endDate
-        If Year(curDate) <> prevYear Then
-            If prevYear <> -1 Then
-                wsG.Range(wsG.Cells(1, yearStartCol), wsG.Cells(1, c - 1)).Merge
-                wsG.Cells(1, yearStartCol).Value = prevYear
-                wsG.Cells(1, yearStartCol).HorizontalAlignment = xlCenter
-            End If
-            yearStartCol = c
-            prevYear = Year(curDate)
-        End If
-        If Month(curDate) <> prevMonth Then
-            If prevMonth <> -1 Then
-                wsG.Range(wsG.Cells(2, monthStartCol), wsG.Cells(2, c - 1)).Merge
-                wsG.Cells(2, monthStartCol).Value = prevMonth
-                wsG.Cells(2, monthStartCol).HorizontalAlignment = xlCenter
+        If Format$(curDate, "yyyy/m") <> prevMonthKey Then
+            If Len(prevMonthKey) > 0 Then
+                wsG.Range(wsG.Cells(1, monthStartCol), wsG.Cells(1, c - 1)).Merge
+                wsG.Cells(1, monthStartCol).Value = prevMonthKey
+                wsG.Cells(1, monthStartCol).HorizontalAlignment = xlCenter
             End If
             monthStartCol = c
-            prevMonth = Month(curDate)
+            prevMonthKey = Format$(curDate, "yyyy/m")
         End If
-        wsG.Cells(3, c).Value = Day(curDate)
-        wsG.Cells(3, c).HorizontalAlignment = xlCenter
+        wsG.Cells(2, c).Value = Day(curDate)
+        wsG.Cells(2, c).HorizontalAlignment = xlCenter
         c = c + 1
         curDate = curDate + 1
     Loop
     If c > startCol Then
-        wsG.Range(wsG.Cells(1, yearStartCol), wsG.Cells(1, c - 1)).Merge
-        wsG.Cells(1, yearStartCol).Value = prevYear
-        wsG.Cells(1, yearStartCol).HorizontalAlignment = xlCenter
-        wsG.Range(wsG.Cells(2, monthStartCol), wsG.Cells(2, c - 1)).Merge
-        wsG.Cells(2, monthStartCol).Value = prevMonth
-        wsG.Cells(2, monthStartCol).HorizontalAlignment = xlCenter
+        wsG.Range(wsG.Cells(1, monthStartCol), wsG.Cells(1, c - 1)).Merge
+        wsG.Cells(1, monthStartCol).Value = prevMonthKey
+        wsG.Cells(1, monthStartCol).HorizontalAlignment = xlCenter
     End If
 
     Dim lastCol As Long
@@ -943,7 +930,7 @@ Sub DrawGanttDaily()
     Dim r As Long
     Dim prevProj As String, prevDest As String, prevCat As String
     Dim ganttRow As Long
-    ganttRow = 4
+    ganttRow = 3
 
     For r = 2 To wsN.Cells(wsN.Rows.Count, 1).End(xlUp).Row
         Dim y As Variant, m As Variant, inputVal As Variant
@@ -1026,8 +1013,8 @@ NextDailyRow:
 
     Dim lastDataRow As Long
     lastDataRow = ganttRow - 1
-    If lastDataRow >= 3 Then
-        wsG.Range(wsG.Cells(3, 1), wsG.Cells(lastDataRow, startCol - 1)).AutoFilter
+    If lastDataRow >= 2 Then
+        wsG.Range(wsG.Cells(2, 1), wsG.Cells(lastDataRow, startCol - 1)).AutoFilter
     End If
 End Sub
 
