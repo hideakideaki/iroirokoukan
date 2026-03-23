@@ -236,6 +236,8 @@ Sub RunAll()
     DrawGantt
     DrawGanttYearMonth
     DrawGanttCompressed
+    DrawGanttWeekly
+    DrawGanttWeeklyCompressed
     DrawGanttDaily
     DrawGanttDailyCompressed
     BuildMilestoneProjTable
@@ -869,6 +871,359 @@ Private Sub ShadeDailyWeekendColumns(ByVal wsG As Worksheet, ByVal startDate As 
             Next
         End If
     Next
+End Sub
+
+Private Function GetWeekStartMonday(ByVal targetDate As Date) As Date
+    GetWeekStartMonday = DateAdd("d", 1 - Weekday(targetDate, vbMonday), targetDate)
+End Function
+
+Private Function GetWeekEndSunday(ByVal targetDate As Date) As Date
+    GetWeekEndSunday = DateAdd("d", 7 - Weekday(targetDate, vbMonday), targetDate)
+End Function
+
+Private Function GetWeekIndex(ByVal baseWeekStart As Date, ByVal targetDate As Date) As Long
+    GetWeekIndex = DateDiff("d", baseWeekStart, GetWeekStartMonday(targetDate)) \ 7
+End Function
+
+Private Sub BuildWeeklyAxis(ByVal wsG As Worksheet, ByVal startCol As Long, ByVal startDate As Date, ByVal endDate As Date, ByRef lastCol As Long)
+    Dim c As Long
+    Dim curWeekStart As Date
+    Dim monthStartCol As Long
+    Dim prevMonthKey As String
+
+    c = startCol
+    curWeekStart = startDate
+    prevMonthKey = ""
+
+    Do While curWeekStart <= endDate
+        If Format$(curWeekStart, "yyyy/m") <> prevMonthKey Then
+            If Len(prevMonthKey) > 0 Then
+                wsG.Range(wsG.Cells(1, monthStartCol), wsG.Cells(1, c - 1)).Merge
+                wsG.Cells(1, monthStartCol).Value = prevMonthKey
+                wsG.Cells(1, monthStartCol).HorizontalAlignment = xlCenter
+            End If
+            monthStartCol = c
+            prevMonthKey = Format$(curWeekStart, "yyyy/m")
+        End If
+
+        wsG.Cells(2, c).Value = Format$(curWeekStart, "m/d")
+        wsG.Cells(2, c).HorizontalAlignment = xlCenter
+        c = c + 1
+        curWeekStart = DateAdd("d", 7, curWeekStart)
+    Loop
+
+    If c > startCol Then
+        wsG.Range(wsG.Cells(1, monthStartCol), wsG.Cells(1, c - 1)).Merge
+        wsG.Cells(1, monthStartCol).Value = prevMonthKey
+        wsG.Cells(1, monthStartCol).HorizontalAlignment = xlCenter
+    End If
+
+    lastCol = c - 1
+End Sub
+
+Sub DrawGanttWeeklyCompressed()
+    Dim COLOR_MONTH As Long
+    Dim COLOR_DATE As Long
+    Dim START_YEAR As Long
+    Dim END_YEAR As Long
+    Dim ganttColWidth As Double
+    Dim catColors As Object
+
+    COLOR_MONTH = RGB(255, 242, 204)
+    COLOR_DATE = RGB(198, 239, 206)
+    EnsureSettingSheet
+    START_YEAR = CLng(Worksheets("Setting").Range("B1").Value)
+    END_YEAR = CLng(Worksheets("Setting").Range("B2").Value)
+    ganttColWidth = 3
+
+    Dim settingColWidth As Variant
+    Dim settingMonthColor As Variant
+    Dim settingDateColor As Variant
+    settingColWidth = Worksheets("Setting").Range("B3").Value
+    settingMonthColor = Worksheets("Setting").Range("B4").Value
+    settingDateColor = Worksheets("Setting").Range("B5").Value
+    If IsNumeric(settingColWidth) And settingColWidth > 0 Then
+        ganttColWidth = CDbl(settingColWidth)
+    End If
+    COLOR_MONTH = ParseSettingColor(settingMonthColor, COLOR_MONTH)
+    COLOR_DATE = ParseSettingColor(settingDateColor, COLOR_DATE)
+    Set catColors = LoadCategoryColors(Worksheets("Setting"))
+
+    Dim wsN As Worksheet, wsG As Worksheet
+    Dim startDate As Date, endDate As Date
+    Dim startCol As Long
+    Dim lastCol As Long
+
+    Set wsN = Worksheets("Normalized")
+    On Error Resume Next
+    Set wsG = Worksheets("Gantt_Weekly_Compact")
+    On Error GoTo 0
+    If wsG Is Nothing Then
+        Set wsG = Worksheets.Add(After:=Worksheets(Worksheets.Count))
+        wsG.Name = "Gantt_Weekly_Compact"
+    End If
+
+    wsG.Cells.Clear
+    wsG.Cells(2, 1).Value = "Proj"
+    wsG.Cells(2, 2).Value = "Dest"
+    wsG.Cells(2, 3).Value = "Category"
+    wsG.Cells(2, 4).Value = "Milestone"
+    wsG.Cells(2, 5).Value = "Date"
+
+    startCol = 6
+    startDate = GetWeekStartMonday(DateSerial(START_YEAR, 1, 1))
+    endDate = GetWeekEndSunday(DateSerial(END_YEAR, 12, 31))
+    BuildWeeklyAxis wsG, startCol, startDate, endDate, lastCol
+    wsG.Range(wsG.Cells(1, startCol), wsG.Cells(1, lastCol)).EntireColumn.ColumnWidth = ganttColWidth
+
+    Dim lanes As Collection
+    Dim laneEndCols As Object
+    Dim currentRow As Long
+    Dim prevGroupKey As String
+    Dim r As Long
+
+    Set lanes = New Collection
+    Set laneEndCols = CreateObject("Scripting.Dictionary")
+    currentRow = 3
+    prevGroupKey = ""
+
+    For r = 2 To wsN.Cells(wsN.Rows.Count, 1).End(xlUp).Row
+        Dim yr As Long, mo As Long
+        Dim evStart As Date, evEnd As Date
+        Dim curProj As String, curDest As String, curCat As String
+        Dim groupKey As String
+        Dim startIdx As Long, endIdx As Long
+        Dim eventStartCol As Long, eventEndCol As Long
+        Dim visualEndCol As Long
+        Dim laneIndex As Long
+        Dim targetRow As Long
+        Dim catColor As Variant
+        Dim fillColor As Long
+
+        If Not IsNumeric(wsN.Cells(r, 1).Value) Or Not IsNumeric(wsN.Cells(r, 2).Value) Then GoTo NextWeeklyCompactRow
+        yr = CLng(wsN.Cells(r, 1).Value)
+        mo = CLng(wsN.Cells(r, 2).Value)
+        If yr < START_YEAR Or yr > END_YEAR Then GoTo NextWeeklyCompactRow
+        If mo < 1 Or mo > 12 Then GoTo NextWeeklyCompactRow
+        If Not TryGetNormalizedDateRange(wsN, r, evStart, evEnd) Then GoTo NextWeeklyCompactRow
+
+        curProj = CStr(wsN.Cells(r, 8).Value)
+        curDest = CStr(wsN.Cells(r, 9).Value)
+        curCat = CStr(wsN.Cells(r, 10).Value)
+        groupKey = curProj & "|" & curDest & "|" & curCat
+
+        If Len(prevGroupKey) > 0 And groupKey <> prevGroupKey Then
+            currentRow = currentRow + 1
+            With wsG.Range(wsG.Cells(currentRow, 1), wsG.Cells(currentRow, lastCol)).Borders(xlEdgeTop)
+                .LineStyle = xlContinuous
+                .Weight = xlThick
+            End With
+            Set lanes = New Collection
+            Set laneEndCols = CreateObject("Scripting.Dictionary")
+        End If
+        prevGroupKey = groupKey
+
+        startIdx = GetWeekIndex(startDate, evStart)
+        endIdx = GetWeekIndex(startDate, evEnd)
+        If endIdx < 0 Or startIdx > (lastCol - startCol) Then GoTo NextWeeklyCompactRow
+        If startIdx < 0 Then startIdx = 0
+        If endIdx > (lastCol - startCol) Then endIdx = (lastCol - startCol)
+
+        eventStartCol = startCol + startIdx
+        eventEndCol = startCol + endIdx
+        visualEndCol = GetVisualEndCol(eventStartCol, eventEndCol, CStr(wsN.Cells(r, 4).Value), ganttColWidth)
+
+        laneIndex = FindAvailableLaneIndex(laneEndCols, lanes.Count, eventStartCol)
+        If laneIndex = 0 Then
+            targetRow = currentRow
+            lanes.Add targetRow
+            laneEndCols(CStr(lanes.Count)) = visualEndCol
+            currentRow = currentRow + 1
+            laneIndex = lanes.Count
+            wsG.Cells(targetRow, 1).Value = curProj
+            wsG.Cells(targetRow, 2).Value = curDest
+            wsG.Cells(targetRow, 3).Value = curCat
+            If laneIndex > 1 Then
+                wsG.Cells(targetRow, 1).Font.Color = RGB(180, 180, 180)
+                wsG.Cells(targetRow, 2).Font.Color = RGB(180, 180, 180)
+                wsG.Cells(targetRow, 3).Font.Color = RGB(180, 180, 180)
+            End If
+        Else
+            targetRow = CLng(lanes(laneIndex))
+            laneEndCols(CStr(laneIndex)) = visualEndCol
+        End If
+
+        AppendCellText wsG.Cells(targetRow, 4), CStr(wsN.Cells(r, 6).Value)
+        AppendCellText wsG.Cells(targetRow, 5), Format(evStart, "yyyy/m/d") & " - " & Format(evEnd, "yyyy/m/d")
+
+        catColor = GetCategoryColor(catColors, curCat)
+        If Not IsEmpty(catColor) Then
+            fillColor = CLng(catColor)
+        ElseIf CStr(wsN.Cells(r, 5).Value) = "MONTH" Then
+            fillColor = COLOR_MONTH
+        Else
+            fillColor = COLOR_DATE
+        End If
+
+        wsG.Range(wsG.Cells(targetRow, eventStartCol), wsG.Cells(targetRow, eventEndCol)).Interior.Color = fillColor
+        With wsG.Cells(targetRow, eventStartCol)
+            .Value = wsN.Cells(r, 4).Value
+            .WrapText = False
+            .HorizontalAlignment = xlLeft
+        End With
+NextWeeklyCompactRow:
+    Next
+
+    Dim lastDataRow As Long
+    lastDataRow = currentRow - 1
+    If lastDataRow >= 2 Then
+        wsG.Range(wsG.Cells(2, 1), wsG.Cells(lastDataRow, startCol - 1)).AutoFilter
+    End If
+End Sub
+
+Sub DrawGanttWeekly()
+    Dim COLOR_MONTH As Long
+    Dim COLOR_DATE As Long
+    Dim START_YEAR As Long
+    Dim END_YEAR As Long
+    Dim ganttColWidth As Double
+    Dim catColors As Object
+
+    COLOR_MONTH = RGB(255, 242, 204)
+    COLOR_DATE = RGB(198, 239, 206)
+    EnsureSettingSheet
+    START_YEAR = CLng(Worksheets("Setting").Range("B1").Value)
+    END_YEAR = CLng(Worksheets("Setting").Range("B2").Value)
+    ganttColWidth = 3
+
+    Dim settingColWidth As Variant
+    Dim settingMonthColor As Variant
+    Dim settingDateColor As Variant
+    settingColWidth = Worksheets("Setting").Range("B3").Value
+    settingMonthColor = Worksheets("Setting").Range("B4").Value
+    settingDateColor = Worksheets("Setting").Range("B5").Value
+    If IsNumeric(settingColWidth) And settingColWidth > 0 Then
+        ganttColWidth = CDbl(settingColWidth)
+    End If
+    COLOR_MONTH = ParseSettingColor(settingMonthColor, COLOR_MONTH)
+    COLOR_DATE = ParseSettingColor(settingDateColor, COLOR_DATE)
+    Set catColors = LoadCategoryColors(Worksheets("Setting"))
+
+    Dim wsN As Worksheet, wsG As Worksheet
+    Dim startDate As Date, endDate As Date
+    Dim startCol As Long
+    Dim lastCol As Long
+
+    Set wsN = Worksheets("Normalized")
+    On Error Resume Next
+    Set wsG = Worksheets("Gantt_Weekly")
+    On Error GoTo 0
+    If wsG Is Nothing Then
+        Set wsG = Worksheets.Add(After:=Worksheets(Worksheets.Count))
+        wsG.Name = "Gantt_Weekly"
+    End If
+
+    wsG.Cells.Clear
+    wsG.Cells(2, 1).Value = "Proj"
+    wsG.Cells(2, 2).Value = "Dest"
+    wsG.Cells(2, 3).Value = "Category"
+    wsG.Cells(2, 4).Value = "Milestone"
+    wsG.Cells(2, 5).Value = "Date"
+
+    startCol = 6
+    startDate = GetWeekStartMonday(DateSerial(START_YEAR, 1, 1))
+    endDate = GetWeekEndSunday(DateSerial(END_YEAR, 12, 31))
+    BuildWeeklyAxis wsG, startCol, startDate, endDate, lastCol
+    wsG.Range(wsG.Cells(1, startCol), wsG.Cells(1, lastCol)).EntireColumn.ColumnWidth = ganttColWidth
+
+    Dim r As Long
+    Dim prevProj As String, prevDest As String, prevCat As String
+    Dim ganttRow As Long
+    ganttRow = 3
+
+    For r = 2 To wsN.Cells(wsN.Rows.Count, 1).End(xlUp).Row
+        Dim y As Variant, m As Variant
+        y = wsN.Cells(r, 1).Value
+        m = wsN.Cells(r, 2).Value
+        If Not IsNumeric(y) Or Not IsNumeric(m) Then GoTo NextWeeklyRow
+
+        Dim curProj As String, curDest As String, curCat As String
+        curProj = CStr(wsN.Cells(r, 8).Value)
+        curDest = CStr(wsN.Cells(r, 9).Value)
+        curCat = CStr(wsN.Cells(r, 10).Value)
+
+        If Len(prevProj) > 0 And (curProj <> prevProj Or curDest <> prevDest Or curCat <> prevCat) Then
+            ganttRow = ganttRow + 1
+            With wsG.Range(wsG.Cells(ganttRow, 1), wsG.Cells(ganttRow, lastCol)).Borders(xlEdgeTop)
+                .LineStyle = xlContinuous
+                .Weight = xlThick
+            End With
+        End If
+
+        wsG.Cells(ganttRow, 1).Value = curProj
+        If Len(curProj) > 0 And curProj = prevProj Then
+            wsG.Cells(ganttRow, 1).Font.Color = RGB(180, 180, 180)
+        Else
+            wsG.Cells(ganttRow, 1).Font.ColorIndex = xlAutomatic
+        End If
+        wsG.Cells(ganttRow, 2).Value = curDest
+        If Len(curDest) > 0 And curDest = prevDest Then
+            wsG.Cells(ganttRow, 2).Font.Color = RGB(180, 180, 180)
+        Else
+            wsG.Cells(ganttRow, 2).Font.ColorIndex = xlAutomatic
+        End If
+        wsG.Cells(ganttRow, 3).Value = curCat
+        wsG.Cells(ganttRow, 4).Value = wsN.Cells(r, 6).Value
+
+        Dim evStart As Date, evEnd As Date
+        If Not TryGetNormalizedDateRange(wsN, r, evStart, evEnd) Then GoTo NextWeeklyRow
+
+        wsG.Cells(ganttRow, 5).Value = Format(evStart, "yyyy/m/d") & " - " & Format(evEnd, "yyyy/m/d")
+
+        prevProj = curProj
+        prevDest = curDest
+        prevCat = curCat
+
+        Dim catColor As Variant
+        catColor = GetCategoryColor(catColors, curCat)
+
+        Dim fillColor As Long
+        If Not IsEmpty(catColor) Then
+            fillColor = CLng(catColor)
+        ElseIf CStr(wsN.Cells(r, 5).Value) = "MONTH" Then
+            fillColor = COLOR_MONTH
+        Else
+            fillColor = COLOR_DATE
+        End If
+
+        Dim startIdx As Long, endIdx As Long
+        startIdx = GetWeekIndex(startDate, evStart)
+        endIdx = GetWeekIndex(startDate, evEnd)
+        If endIdx < 0 Or startIdx > (lastCol - startCol) Then GoTo NextWeeklyPaint
+        If startIdx < 0 Then startIdx = 0
+        If endIdx > (lastCol - startCol) Then endIdx = (lastCol - startCol)
+
+        Dim colStart As Long, colEnd As Long
+        colStart = startCol + startIdx
+        colEnd = startCol + endIdx
+
+        wsG.Range(wsG.Cells(ganttRow, colStart), wsG.Cells(ganttRow, colEnd)).Interior.Color = fillColor
+        With wsG.Cells(ganttRow, colStart)
+            .Value = wsN.Cells(r, 4).Value
+            .WrapText = False
+            .HorizontalAlignment = xlLeft
+        End With
+
+NextWeeklyPaint:
+        ganttRow = ganttRow + 1
+NextWeeklyRow:
+    Next
+
+    Dim lastDataRow As Long
+    lastDataRow = ganttRow - 1
+    If lastDataRow >= 2 Then
+        wsG.Range(wsG.Cells(2, 1), wsG.Cells(lastDataRow, startCol - 1)).AutoFilter
+    End If
 End Sub
 
 Sub DrawGanttDailyCompressed()
