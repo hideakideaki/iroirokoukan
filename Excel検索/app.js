@@ -4,7 +4,8 @@
     project: {
       activeTableKey: "",
       activeFileName: "",
-      activeSheetName: ""
+      activeSheetName: "",
+      filePathMemo: ""
     },
     raw: {
       files: {}
@@ -20,9 +21,11 @@
         rowHeaderColCount: 1,
         dataRowStart: 2,
         dataColStart: 2,
-        autoFillDataStart: true
+        autoFillDataStart: true,
+        filePathMemo: ""
       },
-      perTable: {}
+      perTable: {},
+      pendingImport: null
     },
     results: {
       lastSearch: []
@@ -59,6 +62,7 @@
   const exportSettingsBtn = $("exportSettingsBtn");
   const importSettingsBtn = $("importSettingsBtn");
   const importSettingsFile = $("importSettingsFile");
+  const filePathMemo = $("filePathMemo");
 
   const queryEl = $("query");
   const modeEl  = $("mode");
@@ -121,7 +125,13 @@
   }
   function ensureTableSettings(key) {
     if (!state.settings.perTable[key]) {
-      state.settings.perTable[key] = { ...state.settings.defaults };
+      state.settings.perTable[key] = {
+        ...state.settings.defaults,
+        filePathMemo: ""
+      };
+    }
+    if (typeof state.settings.perTable[key].filePathMemo !== "string") {
+      state.settings.perTable[key].filePathMemo = "";
     }
     return state.settings.perTable[key];
   }
@@ -244,6 +254,7 @@
     state.project.activeFileName = fileName;
     state.project.activeSheetName = sheetName;
     const settings = ensureTableSettings(key);
+    state.project.filePathMemo = settings.filePathMemo || "";
     applySettingsToUI(settings);
     sheetSelect.value = key;
   }
@@ -251,6 +262,7 @@
     state.project.activeTableKey = "";
     state.project.activeFileName = "";
     state.project.activeSheetName = "";
+    state.project.filePathMemo = "";
     sheetSelect.value = "";
   }
   function refreshAfterDelete() {
@@ -307,7 +319,8 @@
       rowHeaderColCount: toInt(rowHeaderColCount),
       dataRowStart: toInt(dataRowStart),
       dataColStart: toInt(dataColStart),
-      autoFillDataStart: !!autoFillDataStart.checked
+      autoFillDataStart: !!autoFillDataStart.checked,
+      filePathMemo: (filePathMemo.value || "").trim()
     };
   }
   function toPositiveInt(value, fallback) {
@@ -326,7 +339,10 @@
       dataColStart: toPositiveInt(src.dataColStart, fallback.dataColStart),
       autoFillDataStart: typeof src.autoFillDataStart === "boolean"
         ? src.autoFillDataStart
-        : !!fallback.autoFillDataStart
+        : !!fallback.autoFillDataStart,
+      filePathMemo: typeof src.filePathMemo === "string"
+        ? src.filePathMemo
+        : (fallback.filePathMemo || "")
     };
   }
   function buildSettingsSnapshot() {
@@ -335,13 +351,58 @@
     Object.entries(state.settings.perTable).forEach(([key, value]) => {
       perTable[key] = sanitizeSettings(value, defaults);
     });
+    const activeTableKey = getActiveTableKey();
     return {
       schema: "excel-search-settings",
       version: 1,
       exportedAt: new Date().toISOString(),
+      selection: {
+        activeTableKey,
+        activeFileName: state.project.activeFileName || "",
+        activeSheetName: state.project.activeSheetName || "",
+        filePathMemo: state.project.filePathMemo || "",
+        loadedTableKeys: listRawTableKeys()
+      },
       defaults,
       perTable
     };
+  }
+  function resolveImportedSelection(payload) {
+    if (!payload || typeof payload !== "object") return "";
+    const selection = payload.selection;
+    if (!selection || typeof selection !== "object") return "";
+    const activeTableKey = typeof selection.activeTableKey === "string"
+      ? selection.activeTableKey
+      : "";
+    if (!activeTableKey) return "";
+    return listRawTableKeys().includes(activeTableKey) ? activeTableKey : "";
+  }
+  function setPendingImportedSelection(payload) {
+    if (!payload || typeof payload !== "object") {
+      state.settings.pendingImport = null;
+      return;
+    }
+    const selection = payload.selection && typeof payload.selection === "object"
+      ? payload.selection
+      : null;
+    const activeTableKey = selection && typeof selection.activeTableKey === "string"
+      ? selection.activeTableKey
+      : "";
+    state.settings.pendingImport = activeTableKey
+      ? {
+          activeTableKey,
+          filePathMemo: selection && typeof selection.filePathMemo === "string"
+            ? selection.filePathMemo
+            : ""
+        }
+      : null;
+  }
+  function consumePendingImportedSelection() {
+    const pending = state.settings.pendingImport;
+    if (!pending || !pending.activeTableKey) return "";
+    if (!listRawTableKeys().includes(pending.activeTableKey)) return "";
+    state.settings.pendingImport = null;
+    return pending.activeTableKey;
   }
   function applyImportedSettings(payload) {
     if (!payload || typeof payload !== "object") {
@@ -358,7 +419,14 @@
     });
     state.settings.defaults = importedDefaults;
     state.settings.perTable = { ...state.settings.perTable, ...sanitizedPerTable };
-    return Object.keys(sanitizedPerTable).length;
+    setPendingImportedSelection(payload);
+    return {
+      importedCount: Object.keys(sanitizedPerTable).length,
+      selectedTableKey: resolveImportedSelection(payload),
+      importedFilePathMemo: payload.selection && typeof payload.selection.filePathMemo === "string"
+        ? payload.selection.filePathMemo
+        : ""
+    };
   }
   function downloadSettingsJson(payload) {
     const json = JSON.stringify(payload, null, 2);
@@ -382,6 +450,8 @@
     dataRowStart.value = settings.dataRowStart;
     dataColStart.value = settings.dataColStart;
     autoFillDataStart.checked = !!settings.autoFillDataStart;
+    filePathMemo.value = settings.filePathMemo || "";
+    state.project.filePathMemo = settings.filePathMemo || "";
     updateRowHeaderLetters();
     updateDataColLetters();
     updateCurrentSettingsCard(settings);
@@ -393,7 +463,8 @@
     }
     currentSettings.textContent =
       `列ヘッダ開始行=${settings.colHeaderRowStart}、行数=${settings.colHeaderRowCount} / ` +
-      `行ヘッダ開始列=${settings.rowHeaderColStart}、列数=${settings.rowHeaderColCount}`;
+      `行ヘッダ開始列=${settings.rowHeaderColStart}、列数=${settings.rowHeaderColCount} / ` +
+      `ファイルパス=${settings.filePathMemo || "(未入力)"}`;
   }
 
   function updateDefaultDataRowStart() {
@@ -691,6 +762,7 @@
   colHeaderRowCount.addEventListener("input", () => updateCurrentSettingsCard(readSettingsFromUI()));
   rowHeaderColStart.addEventListener("input", () => updateCurrentSettingsCard(readSettingsFromUI()));
   rowHeaderColCount.addEventListener("input", () => updateCurrentSettingsCard(readSettingsFromUI()));
+  filePathMemo.addEventListener("input", () => updateCurrentSettingsCard(readSettingsFromUI()));
 
   fileEl.addEventListener("change", async (e) => {
     const files = Array.from(e.target.files || []);
@@ -720,7 +792,10 @@
       rebuildTableOptions();
       rebuildDeleteOptions();
       updateLoadedFilesUI();
-      if (!state.project.activeTableKey) {
+      const pendingKey = consumePendingImportedSelection();
+      if (pendingKey) {
+        setActiveTable(pendingKey);
+      } else if (!state.project.activeTableKey) {
         const firstKey = sheetSelect.value;
         if (firstKey) setActiveTable(firstKey);
       }
@@ -785,16 +860,25 @@
     try {
       const text = await file.text();
       const payload = JSON.parse(text);
-      const importedCount = applyImportedSettings(payload);
-      const key = getActiveTableKey();
+      const imported = applyImportedSettings(payload);
+      const key = imported.selectedTableKey || getActiveTableKey();
+      if (imported.selectedTableKey) {
+        setActiveTable(imported.selectedTableKey);
+      }
       if (key) {
         const settings = ensureTableSettings(key);
         applySettingsToUI(settings);
         applySettingsAndNormalize();
       } else {
-        applySettingsToUI(state.settings.defaults);
+        applySettingsToUI({
+          ...state.settings.defaults,
+          filePathMemo: imported.importedFilePathMemo || state.settings.defaults.filePathMemo || ""
+        });
       }
-      setStatus(settingsStatus, `設定をインポートしました（${importedCount}テーブル）`, "ok");
+      const selectionMessage = imported.selectedTableKey
+        ? ` / 選択シート=${state.project.activeSheetName}`
+        : "";
+      setStatus(settingsStatus, `設定をインポートしました（${imported.importedCount}テーブル${selectionMessage}）`, "ok");
     } catch (err) {
       console.error(err);
       setStatus(settingsStatus, "設定のインポートに失敗しました（JSON形式を確認してください）", "err");

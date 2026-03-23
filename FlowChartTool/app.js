@@ -23,8 +23,11 @@ const canvas = document.getElementById("canvas");
     const zoomResetButton = document.getElementById("zoomReset");
     const toggleSnapButton = document.getElementById("toggleSnap");
     const snapSizeInput = document.getElementById("snapSizeInput");
+    const arrowSizeInput = document.getElementById("arrowSizeInput");
     const copySelectionButton = document.getElementById("copySelection");
     const exportPngButton = document.getElementById("exportPng");
+    const exportMermaidButton = document.getElementById("exportMermaid");
+    const importMermaidButton = document.getElementById("importMermaid");
     const toggleMindmapButton = document.getElementById("toggleMindmap");
     const toggleSidebarButton = document.getElementById("toggleSidebar");
     const groupNodesButton = document.getElementById("groupNodes");
@@ -58,6 +61,7 @@ const canvas = document.getElementById("canvas");
       clipboard: null,
       snapEnabled: true,
       snapSize: 10,
+      arrowSize: 8,
       mindmapMode: true,
       copyOnDrag: false,
       copyOrigin: { x: 0, y: 0 },
@@ -148,6 +152,9 @@ const canvas = document.getElementById("canvas");
       return {
         nodes: JSON.parse(JSON.stringify(state.nodes)),
         links: JSON.parse(JSON.stringify(state.links)),
+        settings: {
+          arrowSize: state.arrowSize,
+        },
         viewBox: {
           x: viewBox.x,
           y: viewBox.y,
@@ -186,6 +193,8 @@ const canvas = document.getElementById("canvas");
       state.selectedId = null;
       state.selectedIds = [];
       state.selectedLinkId = null;
+      state.arrowSize = Math.max(4, Math.min(20, Number(snapshot.settings && snapshot.settings.arrowSize) || 8));
+      arrowSizeInput.value = state.arrowSize;
       const viewBox = canvas.viewBox.baseVal;
       viewBox.x = snapshot.viewBox.x;
       viewBox.y = snapshot.viewBox.y;
@@ -233,6 +242,7 @@ const canvas = document.getElementById("canvas");
     }
 
     function render() {
+      updateArrowMarker();
       canvas.querySelectorAll(".node").forEach(node => node.remove());
       canvas.querySelectorAll(".connector").forEach(link => link.remove());
 
@@ -245,6 +255,16 @@ const canvas = document.getElementById("canvas");
       updateMindmapButton();
       updateSidebarButton();
       updateSelectionControls();
+    }
+
+    function updateArrowMarker() {
+      const marker = document.getElementById("arrow");
+      if (!marker) return;
+      const size = Math.max(4, Math.min(20, Number(state.arrowSize) || 8));
+      marker.setAttribute("markerWidth", size);
+      marker.setAttribute("markerHeight", size);
+      marker.setAttribute("refX", "9");
+      marker.setAttribute("refY", "5");
     }
 
     function drawNode(node) {
@@ -1035,14 +1055,9 @@ const canvas = document.getElementById("canvas");
       render();
     }
 
-    function exportJson() {
-      const data = JSON.stringify({ version: APP_VERSION, nodes: state.nodes, links: state.links }, null, 2);
-      const blob = new Blob([data], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
+    function getTimestamp() {
       const now = new Date();
-      const stamp = [
+      return [
         now.getFullYear(),
         String(now.getMonth() + 1).padStart(2, "0"),
         String(now.getDate()).padStart(2, "0"),
@@ -1051,33 +1066,341 @@ const canvas = document.getElementById("canvas");
         String(now.getMinutes()).padStart(2, "0"),
         String(now.getSeconds()).padStart(2, "0"),
       ].join("");
-      a.download = `flowchart_${stamp}.json`;
+    }
+
+    function downloadTextFile(text, filename, mimeType) {
+      const blob = new Blob([text], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
+    }
+
+    function encodeBase64Utf8(text) {
+      const bytes = new TextEncoder().encode(text);
+      let binary = "";
+      bytes.forEach(byte => {
+        binary += String.fromCharCode(byte);
+      });
+      return btoa(binary);
+    }
+
+    function decodeBase64Utf8(text) {
+      const binary = atob(text);
+      const bytes = Uint8Array.from(binary, char => char.charCodeAt(0));
+      return new TextDecoder().decode(bytes);
+    }
+
+    function applyImportedData(data) {
+      state.nodes = Array.isArray(data.nodes) ? data.nodes : [];
+      state.links = Array.isArray(data.links)
+        ? data.links.map(link => ({
+          arrow: true,
+          fromSide: "left",
+          toSide: "right",
+          style: "curve",
+          ...link,
+        }))
+        : [];
+      state.arrowSize = Math.max(4, Math.min(20, Number(data.settings && data.settings.arrowSize) || 8));
+      arrowSizeInput.value = state.arrowSize;
+      state.selectedId = null;
+      state.selectedIds = [];
+      state.selectedLinkId = null;
+      updateInspector();
+      render();
+      pushHistory();
+    }
+
+    function detectMermaidDirection(nodes, links) {
+      if (!links.length) return "TD";
+      let horizontal = 0;
+      let vertical = 0;
+      links.forEach(link => {
+        const from = nodes.find(node => node.id === link.from);
+        const to = nodes.find(node => node.id === link.to);
+        if (!from || !to) return;
+        const dx = Math.abs((to.x + to.w / 2) - (from.x + from.w / 2));
+        const dy = Math.abs((to.y + to.h / 2) - (from.y + from.h / 2));
+        if (dx >= dy) {
+          horizontal += 1;
+        } else {
+          vertical += 1;
+        }
+      });
+      return horizontal > vertical ? "LR" : "TD";
+    }
+
+    function escapeMermaidLabel(label) {
+      return String(label || "")
+        .replace(/"/g, "&quot;")
+        .replace(/\r?\n/g, "<br/>");
+    }
+
+    function nodeToMermaid(nodeId, node) {
+      const label = escapeMermaidLabel(node.label || nodeId);
+      if (node.type === "start") return `${nodeId}(["${label}"])`;
+      if (node.type === "decision") return `${nodeId}{"${label}"}`;
+      if (node.type === "io") return `${nodeId}[/"${label}"/]`;
+      return `${nodeId}["${label}"]`;
+    }
+
+    function exportMermaid() {
+      const direction = detectMermaidDirection(state.nodes, state.links);
+      const nodeIdMap = new Map(state.nodes.map((node, index) => [node.id, `N${index + 1}`]));
+      const lines = [
+        `%% Generated by FlowChartTool Lite ${APP_VERSION}`,
+        `flowchart ${direction}`,
+      ];
+
+      state.nodes.forEach(node => {
+        const mermaidId = nodeIdMap.get(node.id);
+        lines.push(`    ${nodeToMermaid(mermaidId, node)}`);
+      });
+
+      state.links.forEach(link => {
+        const fromId = nodeIdMap.get(link.from);
+        const toId = nodeIdMap.get(link.to);
+        if (!fromId || !toId) return;
+        const edge = link.arrow === false ? "---" : "-->";
+        lines.push(`    ${fromId} ${edge} ${toId}`);
+      });
+
+      state.nodes.forEach(node => {
+        const mermaidId = nodeIdMap.get(node.id);
+        const styles = [];
+        if (node.color && node.color !== "#ffffff" && node.color !== "transparent") {
+          styles.push(`fill:${node.color}`);
+        }
+        if (node.type === "dashed") {
+          styles.push("fill:transparent", "stroke:#264653", "stroke-width:2px", "stroke-dasharray:6 6");
+        } else if (node.type === "text") {
+          styles.push("fill:transparent", "stroke:none");
+        }
+        if (styles.length) {
+          lines.push(`    style ${mermaidId} ${styles.join(",")}`);
+        }
+      });
+
+      const payload = {
+        version: APP_VERSION,
+        direction,
+        settings: {
+          arrowSize: state.arrowSize,
+        },
+        nodes: state.nodes,
+        links: state.links,
+      };
+      lines.push(`%%FCT_META:${encodeBase64Utf8(JSON.stringify(payload))}`);
+      downloadTextFile(lines.join("\n"), `flowchart_${getTimestamp()}.mmd`, "text/plain;charset=utf-8");
+    }
+
+    function exportJson() {
+      const data = JSON.stringify({
+        version: APP_VERSION,
+        settings: {
+          arrowSize: state.arrowSize,
+        },
+        nodes: state.nodes,
+        links: state.links,
+      }, null, 2);
+      downloadTextFile(data, `flowchart_${getTimestamp()}.json`, "application/json");
     }
 
     function importJson(file) {
       const reader = new FileReader();
       reader.onload = () => {
         try {
-          const data = JSON.parse(reader.result);
-          state.nodes = Array.isArray(data.nodes) ? data.nodes : [];
-          state.links = Array.isArray(data.links)
-            ? data.links.map(link => ({
-              arrow: true,
-              fromSide: "left",
-              toSide: "right",
-              style: "curve",
-              ...link,
-            }))
-            : [];
-          state.selectedId = null;
-          state.selectedLinkId = null;
-          updateInspector();
-          render();
-          pushHistory();
+          applyImportedData(JSON.parse(reader.result));
         } catch (error) {
           alert("JSONの読み込みに失敗しました");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function stripQuotes(text) {
+      const value = String(text || "").trim();
+      if ((value.startsWith("\"") && value.endsWith("\"")) || (value.startsWith("'") && value.endsWith("'"))) {
+        return value.slice(1, -1);
+      }
+      return value;
+    }
+
+    function parseMermaidNodeExpression(expression) {
+      const value = String(expression || "").trim().replace(/;$/, "");
+      const match = value.match(/^([A-Za-z_][\w-]*)(.*)$/);
+      if (!match) return null;
+      const id = match[1];
+      const rest = match[2].trim();
+      let type = "process";
+      let label = id;
+
+      if (!rest) {
+        return { id, type, label };
+      }
+      if (/^\(\[.*\]\)$/.test(rest)) {
+        type = "start";
+        label = rest.slice(2, -2);
+      } else if (/^\(\(.*\)\)$/.test(rest)) {
+        type = "start";
+        label = rest.slice(2, -2);
+      } else if (/^\{.*\}$/.test(rest)) {
+        type = "decision";
+        label = rest.slice(1, -1);
+      } else if (/^\[\/.*\/\]$/.test(rest)) {
+        type = "io";
+        label = rest.slice(2, -2);
+      } else if (/^\[.*\]$/.test(rest)) {
+        type = "process";
+        label = rest.slice(1, -1);
+      } else if (/^\(.*\)$/.test(rest)) {
+        type = "process";
+        label = rest.slice(1, -1);
+      }
+
+      label = stripQuotes(label).replace(/<br\s*\/?>/gi, "\n").replace(/&quot;/g, "\"");
+      return { id, type, label };
+    }
+
+    function buildNodeFromMermaid(parsed, x = 0, y = 0) {
+      const base = shapes[parsed.type] || shapes.process;
+      return {
+        id: parsed.id,
+        type: parsed.type,
+        x,
+        y,
+        w: base.w,
+        h: base.h,
+        label: parsed.label,
+        color: parsed.type === "text" || parsed.type === "dashed" ? "transparent" : "#ffffff",
+        fontSize: 14,
+      };
+    }
+
+    function autoLayoutMermaid(nodes, links, direction) {
+      const nodeMap = new Map(nodes.map(node => [node.id, node]));
+      const indegree = new Map(nodes.map(node => [node.id, 0]));
+      const outgoing = new Map(nodes.map(node => [node.id, []]));
+      links.forEach(link => {
+        if (!nodeMap.has(link.from) || !nodeMap.has(link.to)) return;
+        indegree.set(link.to, (indegree.get(link.to) || 0) + 1);
+        outgoing.get(link.from).push(link.to);
+      });
+
+      const queue = nodes.filter(node => (indegree.get(node.id) || 0) === 0).map(node => node.id);
+      const layer = new Map(nodes.map(node => [node.id, 0]));
+      const visited = new Set();
+      while (queue.length) {
+        const current = queue.shift();
+        visited.add(current);
+        const currentLayer = layer.get(current) || 0;
+        (outgoing.get(current) || []).forEach(next => {
+          layer.set(next, Math.max(layer.get(next) || 0, currentLayer + 1));
+          indegree.set(next, (indegree.get(next) || 0) - 1);
+          if ((indegree.get(next) || 0) === 0) {
+            queue.push(next);
+          }
+        });
+      }
+
+      nodes.forEach((node, index) => {
+        if (!visited.has(node.id)) {
+          layer.set(node.id, Math.max(layer.get(node.id) || 0, index % 4));
+        }
+      });
+
+      const layers = new Map();
+      nodes.forEach(node => {
+        const level = layer.get(node.id) || 0;
+        if (!layers.has(level)) layers.set(level, []);
+        layers.get(level).push(node);
+      });
+
+      const layerKeys = Array.from(layers.keys()).sort((a, b) => a - b);
+      layerKeys.forEach(level => {
+        layers.get(level).sort((a, b) => a.id.localeCompare(b.id, "ja"));
+      });
+
+      const gapX = 240;
+      const gapY = 140;
+      layerKeys.forEach(level => {
+        const group = layers.get(level);
+        group.forEach((node, index) => {
+          if (direction === "LR") {
+            node.x = 120 + level * gapX;
+            node.y = 120 + index * gapY;
+          } else {
+            node.x = 120 + index * gapX;
+            node.y = 120 + level * gapY;
+          }
+        });
+      });
+    }
+
+    function parseMermaid(text) {
+      const metadataMatch = text.match(/^%%FCT_META:(.+)$/m);
+      if (metadataMatch) {
+        return JSON.parse(decodeBase64Utf8(metadataMatch[1].trim()));
+      }
+
+      const lines = text
+        .replace(/\r/g, "")
+        .split("\n")
+        .map(line => line.trim())
+        .filter(line => line && !line.startsWith("%%"));
+
+      const header = lines.find(line => /^(flowchart|graph)\b/i.test(line));
+      const directionMatch = header ? header.match(/^(?:flowchart|graph)\s+([A-Z]{2})/i) : null;
+      const direction = directionMatch ? directionMatch[1].toUpperCase() : "TD";
+
+      const nodes = new Map();
+      const links = [];
+      const edgePattern = /^(.*?)\s*(-->|---|==>|-\.->)\s*(?:\|([^|]*)\|\s*)?(.*?)$/;
+
+      lines.forEach(line => {
+        if (/^(flowchart|graph)\b/i.test(line) || /^style\b/i.test(line) || /^linkStyle\b/i.test(line) || /^classDef\b/i.test(line) || /^class\b/i.test(line)) {
+          return;
+        }
+        const edgeMatch = line.match(edgePattern);
+        if (edgeMatch) {
+          const fromParsed = parseMermaidNodeExpression(edgeMatch[1]);
+          const toParsed = parseMermaidNodeExpression(edgeMatch[4]);
+          if (!fromParsed || !toParsed) return;
+          if (!nodes.has(fromParsed.id)) nodes.set(fromParsed.id, buildNodeFromMermaid(fromParsed));
+          if (!nodes.has(toParsed.id)) nodes.set(toParsed.id, buildNodeFromMermaid(toParsed));
+          links.push({
+            id: crypto.randomUUID(),
+            from: fromParsed.id,
+            to: toParsed.id,
+            arrow: edgeMatch[2] !== "---",
+            fromSide: direction === "LR" ? "right" : "bottom",
+            toSide: direction === "LR" ? "left" : "top",
+            style: "curve",
+          });
+          return;
+        }
+        const parsed = parseMermaidNodeExpression(line);
+        if (parsed && !nodes.has(parsed.id)) {
+          nodes.set(parsed.id, buildNodeFromMermaid(parsed));
+        }
+      });
+
+      const importedNodes = Array.from(nodes.values());
+      autoLayoutMermaid(importedNodes, links, direction);
+      return { version: APP_VERSION, nodes: importedNodes, links };
+    }
+
+    function importMermaid(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = parseMermaid(String(reader.result || ""));
+          applyImportedData(data);
+        } catch (error) {
+          alert("Mermaidの読み込みに失敗しました");
         }
       };
       reader.readAsText(file);
@@ -1246,16 +1569,31 @@ const canvas = document.getElementById("canvas");
       snapSizeInput.value = value;
       state.snapSize = value;
     });
+    arrowSizeInput.addEventListener("change", event => {
+      const value = Math.max(4, Math.min(20, Number(event.target.value) || 8));
+      arrowSizeInput.value = value;
+      state.arrowSize = value;
+      render();
+      pushHistory();
+    });
     zoomInButton.addEventListener("click", () => zoomCanvas(0.85));
     zoomOutButton.addEventListener("click", () => zoomCanvas(1.15));
     zoomResetButton.addEventListener("click", resetZoom);
     exportPngButton.addEventListener("click", exportPng);
+    exportMermaidButton.addEventListener("click", exportMermaid);
+    importMermaidButton.addEventListener("click", () => document.getElementById("mermaidFileInput").click());
     document.getElementById("exportJson").addEventListener("click", exportJson);
     document.getElementById("importJson").addEventListener("click", () => document.getElementById("fileInput").click());
 
     document.getElementById("fileInput").addEventListener("change", event => {
       const file = event.target.files[0];
       if (file) importJson(file);
+      event.target.value = "";
+    });
+
+    document.getElementById("mermaidFileInput").addEventListener("change", event => {
+      const file = event.target.files[0];
+      if (file) importMermaid(file);
       event.target.value = "";
     });
 

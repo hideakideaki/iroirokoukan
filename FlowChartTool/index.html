@@ -87,12 +87,19 @@
         <button class="btn" id="exportJson">JSON Export</button>
         <button class="btn" id="importJson">JSON Import</button>
         <input id="fileInput" type="file" accept="application/json" hidden />
+        <button class="btn" id="exportMermaid">Mermaid Export</button>
+        <button class="btn" id="importMermaid">Mermaid Import</button>
+        <input id="mermaidFileInput" type="file" accept=".mmd,.mermaid,.txt,text/plain" hidden />
         <div class="stacked">
           <button class="btn ghost" id="toggleMindmap">Mindmap: OFF</button>
           <button class="btn ghost" id="exportPng">PNG Export</button>
           <div class="stacked">
             <button class="btn ghost" id="toggleSnap">Snap: ON</button>
             <input class="btn ghost" type="number" id="snapSizeInput" min="2" max="50" value="10" />
+          </div>
+          <div class="stacked">
+            <label for="arrowSizeInput">Arrow Size</label>
+            <input class="btn ghost" type="number" id="arrowSizeInput" min="4" max="20" value="8" />
           </div>
         </div>
         <button class="btn ghost" id="copySelection">Copy</button>
