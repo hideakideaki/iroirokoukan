@@ -33,6 +33,12 @@
 
     const GRID = 20;
     const MAJOR_GRID = 100;
+    const PORT_VECTORS = {
+      top: { x: 0, y: -1 },
+      right: { x: 1, y: 0 },
+      bottom: { x: 0, y: 1 },
+      left: { x: -1, y: 0 },
+    };
 
     const state = {
       mode: 'select',
@@ -53,6 +59,8 @@
       resizingNodeId: null,
       resizingStart: null,
       draggingCanvas: false,
+      draggingEdgeHandle: null,
+      inspectorEditing: false,
       selectionRect: null,
       dragOrigins: null,
       dragStartWorld: null,
@@ -122,6 +130,7 @@
       state.selectedIds = s.selectedIds || [];
       state.primarySelectedId = s.primarySelectedId || null;
       state.selectedEdgeId = s.selectedEdgeId || null;
+      normalizeEdges();
       render();
     }
     function commitHistory() {
@@ -199,45 +208,89 @@
         left: { x: node.x - node.w / 2, y: node.y },
       };
     }
-    function bestPortPair(fromNode, toNode) {
-      const fromPorts = getPorts(fromNode);
-      const toPorts = getPorts(toNode);
-      let best = null;
-      for (const fp of Object.values(fromPorts)) {
-        for (const tp of Object.values(toPorts)) {
-          const dx = fp.x - tp.x;
-          const dy = fp.y - tp.y;
-          const d = dx * dx + dy * dy;
-          if (!best || d < best.d) best = { d, fp, tp };
-        }
-      }
-      return best;
-    }
-    function orthogonalPath(start, end) {
-      const dx = end.x - start.x;
-      const dy = end.y - start.y;
-      if (Math.abs(dx) < 30 || Math.abs(dy) < 30) return `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
+    function inferPortSides(fromNode, toNode) {
+      const dx = toNode.x - fromNode.x;
+      const dy = toNode.y - fromNode.y;
       if (Math.abs(dx) >= Math.abs(dy)) {
-        const mx = start.x + dx / 2;
-        return `M ${start.x} ${start.y} L ${mx} ${start.y} L ${mx} ${end.y} L ${end.x} ${end.y}`;
+        return dx >= 0
+          ? { fromSide: 'right', toSide: 'left' }
+          : { fromSide: 'left', toSide: 'right' };
       }
-      const my = start.y + dy / 2;
-      return `M ${start.x} ${start.y} L ${start.x} ${my} L ${end.x} ${my} L ${end.x} ${end.y}`;
+      return dy >= 0
+        ? { fromSide: 'bottom', toSide: 'top' }
+        : { fromSide: 'top', toSide: 'bottom' };
     }
-    function bezierPath(start, end) {
-      const mx = (start.x + end.x) / 2;
-      return `M ${start.x} ${start.y} C ${mx} ${start.y}, ${mx} ${end.y}, ${end.x} ${end.y}`;
+    function normalizeEdge(edge) {
+      const fromNode = getNode(edge.from);
+      const toNode = getNode(edge.to);
+      if (!fromNode || !toNode) return edge;
+      const inferred = inferPortSides(fromNode, toNode);
+      return {
+        ...edge,
+        fromSide: edge.fromSide || inferred.fromSide,
+        toSide: edge.toSide || inferred.toSide,
+      };
+    }
+    function normalizeEdges() {
+      state.edges = state.edges.map(normalizeEdge);
+    }
+    function getPortPoint(node, side) {
+      const ports = getPorts(node);
+      return ports[side] || ports.right;
+    }
+    function offsetPoint(point, side, distance) {
+      const vector = PORT_VECTORS[side] || PORT_VECTORS.right;
+      return {
+        x: point.x + vector.x * distance,
+        y: point.y + vector.y * distance,
+      };
+    }
+    function orthogonalPath(start, end, fromSide, toSide) {
+      const startOuter = offsetPoint(start, fromSide, 26);
+      const endOuter = offsetPoint(end, toSide, 26);
+      const horizontalFirst = Math.abs(startOuter.x - endOuter.x) >= Math.abs(startOuter.y - endOuter.y);
+      if (horizontalFirst) {
+        const mx = (startOuter.x + endOuter.x) / 2;
+        return `M ${start.x} ${start.y} L ${startOuter.x} ${startOuter.y} L ${mx} ${startOuter.y} L ${mx} ${endOuter.y} L ${endOuter.x} ${endOuter.y} L ${end.x} ${end.y}`;
+      }
+      const my = (startOuter.y + endOuter.y) / 2;
+      return `M ${start.x} ${start.y} L ${startOuter.x} ${startOuter.y} L ${startOuter.x} ${my} L ${endOuter.x} ${my} L ${endOuter.x} ${endOuter.y} L ${end.x} ${end.y}`;
+    }
+    function bezierPath(start, end, fromSide, toSide) {
+      const distance = clamp(Math.hypot(end.x - start.x, end.y - start.y) * 0.35, 36, 120);
+      const c1 = offsetPoint(start, fromSide, distance);
+      const c2 = offsetPoint(end, toSide, distance);
+      return `M ${start.x} ${start.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${end.x} ${end.y}`;
     }
     function straightPath(start, end) { return `M ${start.x} ${start.y} L ${end.x} ${end.y}`; }
     function edgePath(edge) {
       const fromNode = getNode(edge.from);
       const toNode = getNode(edge.to);
       if (!fromNode || !toNode) return '';
-      const pair = bestPortPair(fromNode, toNode);
+      const normalized = normalizeEdge(edge);
+      const start = getPortPoint(fromNode, normalized.fromSide);
+      const end = getPortPoint(toNode, normalized.toSide);
       const type = edge.connector || 'orthogonal';
-      if (type === 'straight') return straightPath(pair.fp, pair.tp);
-      if (type === 'bezier') return bezierPath(pair.fp, pair.tp);
-      return orthogonalPath(pair.fp, pair.tp);
+      if (type === 'straight') return straightPath(start, end);
+      if (type === 'bezier') return bezierPath(start, end, normalized.fromSide, normalized.toSide);
+      return orthogonalPath(start, end, normalized.fromSide, normalized.toSide);
+    }
+    function edgeMarker(edge) {
+      const side = edge.toSide || 'left';
+      const selected = state.selectedEdgeId === edge.id ? 'Selected' : '';
+      const map = {
+        left: 'arrowRight',
+        right: 'arrowLeft',
+        top: 'arrowDown',
+        bottom: 'arrowUp',
+      };
+      return `url(#${map[side] || 'arrowRight'}${selected})`;
+    }
+    function createEdge(fromId, toId, connector = connectorTypeEl.value) {
+      const fromNode = getNode(fromId);
+      const toNode = getNode(toId);
+      const sides = (fromNode && toNode) ? inferPortSides(fromNode, toNode) : { fromSide: 'right', toSide: 'left' };
+      return { id: uid('e'), from: fromId, to: toId, connector, fromSide: sides.fromSide, toSide: sides.toSide };
     }
 
     function createLayerOptions() {
@@ -362,7 +415,7 @@
         const p = createSvg('path');
         p.setAttribute('class', `edge${state.selectedEdgeId === edge.id ? ' selected' : ''}`);
         p.setAttribute('d', d);
-        p.setAttribute('marker-end', state.selectedEdgeId === edge.id ? 'url(#arrowSelected)' : 'url(#arrow)');
+        p.setAttribute('marker-end', edgeMarker(edge));
         p.style.pointerEvents = 'none';
         edgesLayer.appendChild(p);
       }
@@ -424,9 +477,15 @@
         const fromNode = getNode(state.connectFrom);
         if (!fromNode) return;
         const pseudo = { x: state.tempMouse.x, y: state.tempMouse.y, w: 10, h: 10, type: 'process' };
-        const pair = bestPortPair(fromNode, pseudo);
+        const sides = inferPortSides(fromNode, pseudo);
+        const start = getPortPoint(fromNode, sides.fromSide);
+        const end = { x: state.tempMouse.x, y: state.tempMouse.y };
         const type = connectorTypeEl.value;
-        const d = type === 'straight' ? straightPath(pair.fp, pair.tp) : type === 'bezier' ? bezierPath(pair.fp, pair.tp) : orthogonalPath(pair.fp, pair.tp);
+        const d = type === 'straight'
+          ? straightPath(start, end)
+          : type === 'bezier'
+            ? bezierPath(start, end, sides.fromSide, sides.toSide)
+            : orthogonalPath(start, end, sides.fromSide, sides.toSide);
         const path = createSvg('path');
         path.setAttribute('d', d);
         path.setAttribute('stroke', '#5eead4');
@@ -438,14 +497,34 @@
     }
     function drawSelectionRect() {
       selectionLayer.innerHTML = '';
-      if (!state.selectionRect) return;
-      const r = createSvg('rect');
-      r.setAttribute('class', 'selection-box');
-      r.setAttribute('x', Math.min(state.selectionRect.x1, state.selectionRect.x2));
-      r.setAttribute('y', Math.min(state.selectionRect.y1, state.selectionRect.y2));
-      r.setAttribute('width', Math.abs(state.selectionRect.x2 - state.selectionRect.x1));
-      r.setAttribute('height', Math.abs(state.selectionRect.y2 - state.selectionRect.y1));
-      selectionLayer.appendChild(r);
+      if (state.selectionRect) {
+        const r = createSvg('rect');
+        r.setAttribute('class', 'selection-box');
+        r.setAttribute('x', Math.min(state.selectionRect.x1, state.selectionRect.x2));
+        r.setAttribute('y', Math.min(state.selectionRect.y1, state.selectionRect.y2));
+        r.setAttribute('width', Math.abs(state.selectionRect.x2 - state.selectionRect.x1));
+        r.setAttribute('height', Math.abs(state.selectionRect.y2 - state.selectionRect.y1));
+        selectionLayer.appendChild(r);
+      }
+      if (!state.selectedEdgeId) return;
+      const edge = getEdge(state.selectedEdgeId);
+      const fromNode = edge ? getNode(edge.from) : null;
+      const toNode = edge ? getNode(edge.to) : null;
+      if (!edge || !fromNode || !toNode) return;
+      [
+        { end: 'from', point: getPortPoint(fromNode, edge.fromSide) },
+        { end: 'to', point: getPortPoint(toNode, edge.toSide) },
+      ].forEach(({ end, point }) => {
+        const handle = createSvg('circle');
+        handle.setAttribute('class', 'edge-handle');
+        handle.setAttribute('cx', point.x);
+        handle.setAttribute('cy', point.y);
+        handle.setAttribute('r', 7);
+        handle.dataset.kind = 'edge-handle';
+        handle.dataset.id = edge.id;
+        handle.dataset.end = end;
+        selectionLayer.appendChild(handle);
+      });
     }
     function drawMinimap() {
       miniContent.innerHTML = '';
@@ -486,13 +565,14 @@
     }
     function updateInspector() {
       const node = getPrimaryNode();
+      const active = document.activeElement;
       createLayerOptions();
       if (node) {
-        selectedLabel.value = node.label;
-        selectedW.value = String(node.w);
-        selectedH.value = String(node.h);
-        selectedType.value = node.type;
-        selectedLayer.value = node.layerId || state.activeLayerId;
+        if (active !== selectedLabel) selectedLabel.value = node.label;
+        if (active !== selectedW) selectedW.value = String(node.w);
+        if (active !== selectedH) selectedH.value = String(node.h);
+        if (active !== selectedType) selectedType.value = node.type;
+        if (active !== selectedLayer) selectedLayer.value = node.layerId || state.activeLayerId;
       } else {
         selectedLabel.value = '';
         selectedW.value = '';
@@ -552,13 +632,13 @@
       if (!base) return;
       commitHistory();
       const child = addNodeAt(base.x + base.w + 80, base.y, state.shapeToAdd);
-      state.edges.push({ id: uid('e'), from: base.id, to: child.id, connector: connectorTypeEl.value });
+      state.edges.push(createEdge(base.id, child.id));
       render();
     }
     function connectNodes(fromId, toId) {
       if (!fromId || !toId || fromId === toId) return;
       if (state.edges.some(e => e.from === fromId && e.to === toId)) return;
-      state.edges.push({ id: uid('e'), from: fromId, to: toId, connector: connectorTypeEl.value });
+      state.edges.push(createEdge(fromId, toId));
       render();
     }
 
@@ -610,6 +690,45 @@
     function getResizeTarget(target) {
       const el = target.closest('[data-kind="resize"]');
       return el ? el.dataset.id : null;
+    }
+    function getEdgeHandleTarget(target) {
+      const el = target.closest('[data-kind="edge-handle"]');
+      if (!el) return null;
+      return { edgeId: el.dataset.id, end: el.dataset.end };
+    }
+    function pointInsideNode(node, point) {
+      const b = boundsOfNode(node);
+      return point.x >= b.left && point.x <= b.right && point.y >= b.top && point.y <= b.bottom;
+    }
+    function nearestPortSide(node, point) {
+      const ports = getPorts(node);
+      let bestSide = 'right';
+      let bestDistance = Infinity;
+      Object.entries(ports).forEach(([side, port]) => {
+        const dx = port.x - point.x;
+        const dy = port.y - point.y;
+        const distance = dx * dx + dy * dy;
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestSide = side;
+        }
+      });
+      return bestSide;
+    }
+    function retargetEdgeHandle(edge, end, point) {
+      const node = [...sortedVisibleNodes()].reverse().find(candidate => pointInsideNode(candidate, point));
+      if (!node) return false;
+      const side = nearestPortSide(node, point);
+      if (end === 'from') {
+        if (node.id === edge.to) return false;
+        edge.from = node.id;
+        edge.fromSide = side;
+      } else {
+        if (node.id === edge.from) return false;
+        edge.to = node.id;
+        edge.toSide = side;
+      }
+      return true;
     }
 
     function applyAlignment(type) {
@@ -772,6 +891,26 @@
       floatingEditor.style.display = 'none';
       state.editingNodeId = null;
     }
+    function applyInspectorChanges(commit = false) {
+      const node = getPrimaryNode();
+      if (!node) return;
+      if (commit) commitHistory();
+      const nextLabel = selectedLabel.value.trim();
+      node.label = nextLabel || node.label;
+      node.w = clamp(parseInt(selectedW.value || node.w, 10) || node.w, 60, 700);
+      node.h = clamp(parseInt(selectedH.value || node.h, 10) || node.h, 36, 500);
+      node.type = selectedType.value;
+      node.layerId = selectedLayer.value || node.layerId;
+      render();
+    }
+    function beginInspectorEdit() {
+      if (state.inspectorEditing) return;
+      state.inspectorEditing = true;
+      commitHistory();
+    }
+    function endInspectorEdit() {
+      state.inspectorEditing = false;
+    }
 
     function serialize() {
       return { version: 3, nodes: state.nodes, edges: state.edges, layers: state.layers, activeLayerId: state.activeLayerId, groups: state.groups, idSeq: state.idSeq, view: state.view };
@@ -789,6 +928,7 @@
       state.selectedEdgeId = null;
       state.history = [];
       state.future = [];
+      normalizeEdges();
       render();
     }
     function downloadJson() {
@@ -871,9 +1011,9 @@
         { id: uid('n'), x: 250, y: 120, w: 150, h: 60, label: '項目C', type: 'mind', z: 4, layerId: 'layer_default', groupId: null },
       ];
       state.edges = [
-        { id: uid('e'), from: state.nodes[0].id, to: state.nodes[1].id, connector: 'orthogonal' },
-        { id: uid('e'), from: state.nodes[0].id, to: state.nodes[2].id, connector: 'orthogonal' },
-        { id: uid('e'), from: state.nodes[0].id, to: state.nodes[3].id, connector: 'orthogonal' },
+        createEdge(state.nodes[0].id, state.nodes[1].id, 'orthogonal'),
+        createEdge(state.nodes[0].id, state.nodes[2].id, 'orthogonal'),
+        createEdge(state.nodes[0].id, state.nodes[3].id, 'orthogonal'),
       ];
       state.selectedIds = [state.nodes[0].id];
       state.primarySelectedId = state.nodes[0].id;
@@ -886,9 +1026,15 @@
       const world = screenToWorld(e.clientX, e.clientY);
       const node = getHitNode(e.target);
       const edge = getHitEdge(e.target);
+      const edgeHandle = getEdgeHandleTarget(e.target);
       const resizeId = getResizeTarget(e.target);
       const wantPan = state.mode === 'pan' || e.ctrlKey;
 
+      if (edgeHandle && !wantPan) {
+        commitHistory();
+        state.draggingEdgeHandle = edgeHandle;
+        return;
+      }
       if (resizeId) {
         commitHistory();
         state.resizingNodeId = resizeId;
@@ -914,7 +1060,7 @@
         if (state.mode === 'add') {
           commitHistory();
           const newNode = addNodeAt(world.x + 180, world.y, state.shapeToAdd);
-          state.edges.push({ id: uid('e'), from: node.id, to: newNode.id, connector: connectorTypeEl.value });
+          state.edges.push(createEdge(node.id, newNode.id));
           render();
           setMode('select');
           return;
@@ -961,6 +1107,14 @@
         render();
         return;
       }
+      if (state.draggingEdgeHandle) {
+        const edgeToUpdate = getEdge(state.draggingEdgeHandle.edgeId);
+        if (!edgeToUpdate) return;
+        if (retargetEdgeHandle(edgeToUpdate, state.draggingEdgeHandle.end, world)) {
+          render();
+        }
+        return;
+      }
       if (state.draggingNodeIds) {
         const dx = world.x - state.dragStartWorld.x;
         const dy = world.y - state.dragStartWorld.y;
@@ -1001,6 +1155,7 @@
 
     svg.addEventListener('pointerup', () => {
       state.draggingNodeIds = null;
+      state.draggingEdgeHandle = null;
       state.resizingNodeId = null;
       state.resizingStart = null;
       if (state.draggingCanvas) {
@@ -1022,10 +1177,15 @@
         render();
       }
     });
-    svg.addEventListener('dblclick', (e) => {
+    const handleNodeDoubleClick = (e) => {
       const node = getHitNode(e.target);
-      if (node) openFloatingEditor(node, e.clientX, e.clientY);
-    });
+      if (!node) return;
+      e.preventDefault();
+      e.stopPropagation();
+      openFloatingEditor(node, e.clientX, e.clientY);
+    };
+    svg.addEventListener('dblclick', handleNodeDoubleClick);
+    nodesLayer.addEventListener('dblclick', handleNodeDoubleClick);
     svg.addEventListener('wheel', (e) => {
       e.preventDefault();
       const rect = svg.getBoundingClientRect();
@@ -1057,6 +1217,13 @@
       const card = e.target.closest('.shape-card');
       if (!card) return;
       setShapeToAdd(card.dataset.shape);
+    });
+    document.addEventListener('click', (e) => {
+      const item = e.target.closest('[data-trigger]');
+      if (!item) return;
+      const target = document.getElementById(item.dataset.trigger);
+      if (!target) return;
+      target.click();
     });
     connectorTypeEl.addEventListener('change', () => {
       if (!state.selectedEdgeId) return;
@@ -1103,16 +1270,16 @@
     document.getElementById('btnUngroup').addEventListener('click', ungroupSelection);
     document.getElementById('btnBringFront').addEventListener('click', bringFront);
     document.getElementById('btnSendBack').addEventListener('click', sendBack);
-    document.getElementById('btnApply').addEventListener('click', () => {
-      const node = getPrimaryNode();
-      if (!node) return;
-      commitHistory();
-      node.label = selectedLabel.value.trim() || node.label;
-      node.w = clamp(parseInt(selectedW.value || node.w, 10) || node.w, 60, 700);
-      node.h = clamp(parseInt(selectedH.value || node.h, 10) || node.h, 36, 500);
-      node.type = selectedType.value;
-      node.layerId = selectedLayer.value || node.layerId;
-      render();
+    document.getElementById('btnApply').addEventListener('click', () => applyInspectorChanges(true));
+    [selectedLabel, selectedW, selectedH].forEach((el) => {
+      el.addEventListener('focus', beginInspectorEdit);
+      el.addEventListener('blur', endInspectorEdit);
+      el.addEventListener('input', () => applyInspectorChanges(!state.inspectorEditing));
+    });
+    [selectedType, selectedLayer].forEach((el) => {
+      el.addEventListener('focus', beginInspectorEdit);
+      el.addEventListener('blur', endInspectorEdit);
+      el.addEventListener('change', () => applyInspectorChanges(!state.inspectorEditing));
     });
     document.getElementById('btnMakeContainer').addEventListener('click', makeContainerFromSelection);
     document.getElementById('btnAddLayer').addEventListener('click', addLayer);

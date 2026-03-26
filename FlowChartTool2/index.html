@@ -7,6 +7,87 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <header class="topbar">
+    <div class="topbar-brand">FlowChartTool2</div>
+    <nav class="menubar">
+      <div class="menu-group">
+        <button class="menu-root" type="button">ファイル</button>
+        <div class="menu-dropdown">
+          <button type="button" data-trigger="btnNew">新規作成</button>
+          <button type="button" data-trigger="btnSaveJson">JSON保存</button>
+          <button type="button" data-trigger="btnLoadJson">JSON読込</button>
+          <button type="button" data-trigger="btnSaveLocal">ブラウザ保存</button>
+          <button type="button" data-trigger="btnLoadLocal">ブラウザ読込</button>
+          <button type="button" data-trigger="btnExportPng">PNG書き出し</button>
+          <button type="button" data-trigger="btnExportSvg">SVG書き出し</button>
+        </div>
+      </div>
+      <div class="menu-group">
+        <button class="menu-root" type="button">編集</button>
+        <div class="menu-dropdown">
+          <button type="button" data-trigger="btnUndo">Undo</button>
+          <button type="button" data-trigger="btnRedo">Redo</button>
+          <button type="button" data-trigger="btnDuplicate">複製</button>
+          <button type="button" data-trigger="btnDelete">削除</button>
+          <button type="button" data-trigger="btnGroup">グループ化</button>
+          <button type="button" data-trigger="btnUngroup">グループ解除</button>
+        </div>
+      </div>
+      <div class="menu-group">
+        <button class="menu-root" type="button">挿入</button>
+        <div class="menu-dropdown">
+          <button type="button" data-trigger="btnAddCenter">中央に図形を追加</button>
+          <button type="button" data-trigger="btnMakeContainer">選択項目をコンテナ化</button>
+          <button type="button" data-trigger="btnAddLayer">レイヤー追加</button>
+        </div>
+      </div>
+      <div class="menu-group">
+        <button class="menu-root" type="button">配置</button>
+        <div class="menu-dropdown">
+          <button type="button" data-trigger="btnAlignLeft">左揃え</button>
+          <button type="button" data-trigger="btnAlignCenter">中央揃え</button>
+          <button type="button" data-trigger="btnAlignRight">右揃え</button>
+          <button type="button" data-trigger="btnAlignTop">上揃え</button>
+          <button type="button" data-trigger="btnAlignMiddle">中央揃え(縦)</button>
+          <button type="button" data-trigger="btnAlignBottom">下揃え</button>
+          <button type="button" data-trigger="btnDistributeH">横方向に整列</button>
+          <button type="button" data-trigger="btnDistributeV">縦方向に整列</button>
+          <button type="button" data-trigger="btnSameSize">同じサイズ</button>
+        </div>
+      </div>
+      <div class="menu-group">
+        <button class="menu-root" type="button">表示</button>
+        <div class="menu-dropdown">
+          <button type="button" data-trigger="btnAutoLayout">自動レイアウト</button>
+          <button type="button" data-trigger="zoomIn">拡大</button>
+          <button type="button" data-trigger="zoomReset">100%</button>
+          <button type="button" data-trigger="zoomOut">縮小</button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <div class="toolrow">
+    <div class="toolrow-group">
+      <button class="menu-btn" id="btnLeftMenu">左</button>
+      <button class="menu-btn" id="btnRightMenu">右</button>
+      <button type="button" data-trigger="btnUndo">元に戻す</button>
+      <button type="button" data-trigger="btnRedo">やり直し</button>
+      <button type="button" data-trigger="btnDuplicate">複製</button>
+      <button type="button" data-trigger="btnDelete">削除</button>
+    </div>
+    <div class="toolrow-group">
+      <button type="button" data-trigger="btnAlignLeft">左揃え</button>
+      <button type="button" data-trigger="btnAlignCenter">中央揃え</button>
+      <button type="button" data-trigger="btnAlignRight">右揃え</button>
+    </div>
+    <div class="toolrow-group toolrow-zoom">
+      <button id="zoomOut">-</button>
+      <button id="zoomReset">100%</button>
+      <button id="zoomIn">+</button>
+    </div>
+  </div>
+
   <div class="app">
     <aside class="panel leftbar" id="leftbar">
       <div class="section">
@@ -100,7 +181,7 @@
           ・空白ドラッグで範囲選択<br>
           ・<span class="kbd">Shift</span>+クリックで複数選択<br>
           ・右下ハンドルでサイズ変更<br>
-          ・<span class="kbd">Tab</span> で次のノードを選択<br>
+          ・<span class="kbd">Tab</span> で次のノードを追加<br>
           ・接続モードでノードをクリックして接続<br>
           ・<span class="kbd">Ctrl</span>+<span class="kbd">Z</span> / <span class="kbd">Ctrl</span>+<span class="kbd">Y</span><br>
           ・<span class="kbd">Del</span> で削除<br>
@@ -110,21 +191,31 @@
     </aside>
 
     <main class="canvas-wrap">
-      <div class="canvas-toolbar">
-        <button class="menu-btn" id="btnLeftMenu">左</button>
-        <button class="menu-btn" id="btnRightMenu">右</button>
-        <button id="zoomOut">-</button>
-        <button id="zoomReset">100%</button>
-        <button id="zoomIn">+</button>
-      </div>
-
       <svg id="stage" xmlns="http://www.w3.org/2000/svg" aria-label="editor canvas">
         <defs>
-          <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L10,5 L0,10 z" fill="#91a7ff"></path>
+          <marker id="arrowRight" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="0" markerUnits="strokeWidth">
+            <path d="M0,1 L7,4 L0,7 z" fill="#91a7ff"></path>
           </marker>
-          <marker id="arrowSelected" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth">
-            <path d="M0,0 L10,5 L0,10 z" fill="#ffd166"></path>
+          <marker id="arrowLeft" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="180" markerUnits="strokeWidth">
+            <path d="M0,1 L7,4 L0,7 z" fill="#91a7ff"></path>
+          </marker>
+          <marker id="arrowUp" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="270" markerUnits="strokeWidth">
+            <path d="M0,1 L7,4 L0,7 z" fill="#91a7ff"></path>
+          </marker>
+          <marker id="arrowDown" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="90" markerUnits="strokeWidth">
+            <path d="M0,1 L7,4 L0,7 z" fill="#91a7ff"></path>
+          </marker>
+          <marker id="arrowRightSelected" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="0" markerUnits="strokeWidth">
+            <path d="M0,1 L7,4 L0,7 z" fill="#ffd166"></path>
+          </marker>
+          <marker id="arrowLeftSelected" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="180" markerUnits="strokeWidth">
+            <path d="M0,1 L7,4 L0,7 z" fill="#ffd166"></path>
+          </marker>
+          <marker id="arrowUpSelected" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="270" markerUnits="strokeWidth">
+            <path d="M0,1 L7,4 L0,7 z" fill="#ffd166"></path>
+          </marker>
+          <marker id="arrowDownSelected" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="90" markerUnits="strokeWidth">
+            <path d="M0,1 L7,4 L0,7 z" fill="#ffd166"></path>
           </marker>
         </defs>
         <g id="viewport">
