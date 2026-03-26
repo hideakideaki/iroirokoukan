@@ -637,6 +637,18 @@
       state.edges.push(createEdge(base.id, child.id));
       render();
     }
+    function addSiblingBelowNode() {
+      const base = getPrimaryNode();
+      if (!base) return;
+      const parentEdge = state.edges.find(e => e.to === base.id);
+      const parentId = parentEdge?.from || base.id;
+      const parent = getNode(parentId);
+      if (!parent) return;
+      commitHistory();
+      const sibling = addNodeAt(base.x, base.y + Math.max(base.h, 60) + 70, state.shapeToAdd);
+      state.edges.push(createEdge(parent.id, sibling.id));
+      render();
+    }
     function connectNodes(fromId, toId) {
       if (!fromId || !toId || fromId === toId) return;
       if (state.edges.some(e => e.from === fromId && e.to === toId)) return;
@@ -917,6 +929,164 @@
     function serialize() {
       return { version: 3, nodes: state.nodes, edges: state.edges, layers: state.layers, activeLayerId: state.activeLayerId, groups: state.groups, idSeq: state.idSeq, view: state.view };
     }
+    function formatTimestamp(date = new Date()) {
+      const pad = (v) => String(v).padStart(2, '0');
+      return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}_${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+    }
+    function downloadText(content, filename, mimeType) {
+      const blob = new Blob([content], { type: mimeType });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+    }
+    function mermaidSafeId(id) {
+      return String(id || '').replace(/[^A-Za-z0-9_]/g, '_') || uid('node');
+    }
+    function escapeMermaidLabel(text) {
+      return String(text || '').replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '<br/>');
+    }
+    function mermaidNodeSyntax(node, id) {
+      const label = escapeMermaidLabel(node.label);
+      if (node.type === 'decision') return `${id}{"${label}"}`;
+      if (node.type === 'start') return `${id}(["${label}"])`;
+      return `${id}["${label}"]`;
+    }
+    function exportMermaid() {
+      const nodeIds = new Map();
+      const used = new Set();
+      state.nodes.forEach((node) => {
+        let id = mermaidSafeId(node.id);
+        while (used.has(id)) id = `${id}_${used.size}`;
+        used.add(id);
+        nodeIds.set(node.id, id);
+      });
+      const lines = ['flowchart TD'];
+      state.nodes.forEach((node) => {
+        lines.push(`  ${mermaidNodeSyntax(node, nodeIds.get(node.id))}`);
+      });
+      state.edges.forEach((edge) => {
+        const fromId = nodeIds.get(edge.from);
+        const toId = nodeIds.get(edge.to);
+        if (fromId && toId) lines.push(`  ${fromId} --> ${toId}`);
+      });
+      return lines.join('\n');
+    }
+    function parseMermaidEndpoint(spec) {
+      const trimmed = spec.trim().replace(/;$/, '');
+      const match = trimmed.match(/^([A-Za-z_][A-Za-z0-9_]*)(.*)$/);
+      if (!match) return null;
+      const id = match[1];
+      const rest = match[2].trim();
+      let type = 'mind';
+      let label = id;
+      let labelMatch = rest.match(/^\[\("([\s\S]*)"\)\]$/);
+      if (labelMatch) {
+        type = 'start';
+        label = labelMatch[1];
+      } else {
+        labelMatch = rest.match(/^\(\["([\s\S]*)"\]\)$/);
+        if (labelMatch) {
+          type = 'start';
+          label = labelMatch[1];
+        } else {
+          labelMatch = rest.match(/^\{"([\s\S]*)"\}$/);
+          if (labelMatch) {
+            type = 'decision';
+            label = labelMatch[1];
+          } else {
+            labelMatch = rest.match(/^\["([\s\S]*)"\]$/);
+            if (labelMatch) label = labelMatch[1];
+          }
+        }
+      }
+      return { id, label: label.replace(/<br\s*\/?>/gi, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\'), type };
+    }
+    function importMermaid(text) {
+      const lines = String(text || '').split(/\r?\n/).map(line => line.trim()).filter(line => line && !line.startsWith('%%'));
+      const nodesByKey = new Map();
+      const edges = [];
+      const ensureNode = (endpoint) => {
+        if (!endpoint) return null;
+        if (!nodesByKey.has(endpoint.id)) nodesByKey.set(endpoint.id, endpoint);
+        else {
+          const existing = nodesByKey.get(endpoint.id);
+          existing.label = endpoint.label || existing.label;
+          existing.type = endpoint.type || existing.type;
+        }
+        return nodesByKey.get(endpoint.id);
+      };
+      const edgePattern = /(.*?)\s*(?:-->|---|-.->|==>)\s*(.*)/;
+      for (const line of lines) {
+        if (/^(flowchart|graph)\b/i.test(line)) continue;
+        const edgeMatch = line.match(edgePattern);
+        if (edgeMatch) {
+          const from = ensureNode(parseMermaidEndpoint(edgeMatch[1]));
+          const to = ensureNode(parseMermaidEndpoint(edgeMatch[2]));
+          if (from && to) edges.push({ from: from.id, to: to.id });
+          continue;
+        }
+        ensureNode(parseMermaidEndpoint(line));
+      }
+      const importedKeys = [...nodesByKey.keys()];
+      if (!importedKeys.length) throw new Error('No mermaid nodes found');
+      const incoming = new Map(importedKeys.map(key => [key, 0]));
+      const children = new Map(importedKeys.map(key => [key, []]));
+      edges.forEach(({ from, to }) => {
+        incoming.set(to, (incoming.get(to) || 0) + 1);
+        children.get(from)?.push(to);
+      });
+      const roots = importedKeys.filter(key => (incoming.get(key) || 0) === 0);
+      const orderedRoots = roots.length ? roots : [importedKeys[0]];
+      const levelMap = new Map();
+      const queue = orderedRoots.map(key => ({ key, level: 0 }));
+      while (queue.length) {
+        const { key, level } = queue.shift();
+        if (levelMap.has(key)) continue;
+        levelMap.set(key, level);
+        (children.get(key) || []).forEach(child => queue.push({ key: child, level: level + 1 }));
+      }
+      importedKeys.forEach(key => { if (!levelMap.has(key)) levelMap.set(key, 0); });
+      const levelSlots = new Map();
+      const nodeIdMap = new Map();
+      const nodes = importedKeys.map((key) => {
+        const imported = nodesByKey.get(key);
+        const level = levelMap.get(key) || 0;
+        const slot = levelSlots.get(level) || 0;
+        levelSlots.set(level, slot + 1);
+        const node = {
+          id: uid('n'),
+          x: maybeSnap(level * 240),
+          y: maybeSnap(slot * 130),
+          w: imported.type === 'decision' ? 140 : imported.type === 'start' ? 170 : 150,
+          h: imported.type === 'decision' ? 90 : imported.type === 'start' ? 54 : 60,
+          label: imported.label || key,
+          type: imported.type || 'mind',
+          z: nextZ() + level + slot,
+          layerId: state.activeLayerId,
+          groupId: null,
+        };
+        nodeIdMap.set(key, node.id);
+        return node;
+      });
+      const importedEdges = edges
+        .map(({ from, to }) => {
+          const fromId = nodeIdMap.get(from);
+          const toId = nodeIdMap.get(to);
+          return fromId && toId ? createEdge(fromId, toId, 'orthogonal') : null;
+        })
+        .filter(Boolean);
+      loadData({
+        version: 3,
+        nodes,
+        edges: importedEdges,
+        layers: [{ id: 'layer_default', name: 'Default', visible: true, locked: false }],
+        activeLayerId: 'layer_default',
+        groups: [],
+        idSeq: state.idSeq,
+        view: { x: -160, y: -120, scale: 1 },
+      });
+    }
     function loadData(data) {
       state.nodes = Array.isArray(data.nodes) ? data.nodes : [];
       state.edges = Array.isArray(data.edges) ? data.edges : [];
@@ -934,12 +1104,12 @@
       render();
     }
     function downloadJson() {
-      const blob = new Blob([JSON.stringify(serialize(), null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'diagram.json';
-      a.click();
+      downloadText(JSON.stringify(serialize(), null, 2), `diagram_${formatTimestamp()}.json`, 'application/json');
       setStatus('JSONを保存しました');
+    }
+    function downloadMermaid() {
+      downloadText(exportMermaid(), `diagram_${formatTimestamp()}.mmd`, 'text/plain;charset=utf-8');
+      setStatus('Mermaidを保存しました');
     }
     function saveLocal() {
       localStorage.setItem('diagram_editor_data_v3', JSON.stringify(serialize()));
@@ -1224,6 +1394,7 @@
       if (e.key === 'Delete' && !inInput) { removeSelection(); return; }
       if (e.key === 'Escape') { state.connectFrom = null; closeFloatingEditor(); render(); return; }
       if (e.key === 'Tab' && !inInput) { e.preventDefault(); addChildNode(); return; }
+      if (e.key === 'Enter' && !inInput) { e.preventDefault(); addSiblingBelowNode(); return; }
     });
 
     modeChips.addEventListener('click', (e) => {
@@ -1303,7 +1474,15 @@
     document.getElementById('btnAddLayer').addEventListener('click', addLayer);
     document.getElementById('btnRenameLayer').addEventListener('click', renameLayer);
     document.getElementById('btnSaveJson').addEventListener('click', downloadJson);
-    document.getElementById('btnLoadJson').addEventListener('click', () => fileInput.click());
+    document.getElementById('btnLoadJson').addEventListener('click', () => {
+      fileInput.dataset.format = 'json';
+      fileInput.click();
+    });
+    document.getElementById('btnSaveMermaid').addEventListener('click', downloadMermaid);
+    document.getElementById('btnLoadMermaid').addEventListener('click', () => {
+      fileInput.dataset.format = 'mermaid';
+      fileInput.click();
+    });
     document.getElementById('btnExportPng').addEventListener('click', exportPng);
     document.getElementById('btnExportSvg').addEventListener('click', exportSvg);
     document.getElementById('btnSaveLocal').addEventListener('click', saveLocal);
@@ -1324,9 +1503,23 @@
       const file = e.target.files[0];
       if (!file) return;
       const text = await file.text();
-      try { loadData(JSON.parse(text)); setStatus('JSONを読み込みました'); }
-      catch { alert('JSONの読み込みに失敗しました'); }
-      finally { fileInput.value = ''; }
+      const selectedFormat = fileInput.dataset.format || '';
+      const name = file.name.toLowerCase();
+      try {
+        if (selectedFormat === 'mermaid' || name.endsWith('.mmd') || name.endsWith('.mermaid')) {
+          importMermaid(text);
+          setStatus('Mermaidを読み込みました');
+        } else {
+          loadData(JSON.parse(text));
+          setStatus('JSONを読み込みました');
+        }
+      }
+      catch {
+        alert(selectedFormat === 'mermaid' || name.endsWith('.mmd') || name.endsWith('.mermaid')
+          ? 'Mermaidの読み込みに失敗しました'
+          : 'JSONの読み込みに失敗しました');
+      }
+      finally { fileInput.value = ''; fileInput.dataset.format = ''; }
     });
     document.getElementById('floatingOk').addEventListener('click', () => {
       const node = getNode(state.editingNodeId);

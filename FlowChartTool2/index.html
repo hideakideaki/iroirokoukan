@@ -16,6 +16,8 @@
           <button type="button" data-trigger="btnNew">新規作成</button>
           <button type="button" data-trigger="btnSaveJson">JSON保存</button>
           <button type="button" data-trigger="btnLoadJson">JSON読込</button>
+          <button type="button" data-trigger="btnSaveMermaid">Mermaid保存</button>
+          <button type="button" data-trigger="btnLoadMermaid">Mermaid読込</button>
           <button type="button" data-trigger="btnSaveLocal">ブラウザ保存</button>
           <button type="button" data-trigger="btnLoadLocal">ブラウザ読込</button>
           <button type="button" data-trigger="btnExportPng">PNG書き出し</button>
@@ -157,9 +159,11 @@
         <div class="row-wrap">
           <button id="btnSaveJson">JSON保存</button>
           <button id="btnLoadJson">JSON読込</button>
+          <button id="btnSaveMermaid">Mermaid保存</button>
+          <button id="btnLoadMermaid">Mermaid読込</button>
           <button id="btnExportPng" class="secondary">PNG書き出し</button>
           <button id="btnExportSvg" class="secondary">SVG書き出し</button>
-          <input id="fileInput" type="file" accept="application/json" style="display:none;" />
+          <input id="fileInput" type="file" accept=".json,.mmd,.mermaid,text/plain" style="display:none;" />
         </div>
         <div class="row-wrap">
           <button id="btnSaveLocal">ブラウザ保存</button>
@@ -181,7 +185,8 @@
           ・空白ドラッグで範囲選択<br>
           ・<span class="kbd">Shift</span>+クリックで複数選択<br>
           ・右下ハンドルでサイズ変更<br>
-          ・<span class="kbd">Tab</span> で次のノードを追加<br>
+          ・<span class="kbd">Tab</span> で右に子ノードを追加<br>
+          ・<span class="kbd">Enter</span> で下に兄弟ノードを追加<br>
           ・接続モードでノードをクリックして接続<br>
           ・<span class="kbd">Ctrl</span>+<span class="kbd">Z</span> / <span class="kbd">Ctrl</span>+<span class="kbd">Y</span><br>
           ・<span class="kbd">Del</span> で削除<br>
