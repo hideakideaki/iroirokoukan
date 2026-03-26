@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flowchart / Mindmap Editor Pro+</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="panel leftbar" id="leftbar">
+      <div class="section">
+        <h2>ツール</h2>
+        <label>モード</label>
+        <div class="chips" id="modeChips">
+          <div class="chip active" data-mode="select">選択</div>
+          <div class="chip" data-mode="add">追加</div>
+          <div class="chip" data-mode="connect">接続</div>
+          <div class="chip" data-mode="pan">パン</div>
+        </div>
+        <label>図形ライブラリ</label>
+        <div class="shape-grid" id="shapeLibrary">
+          <div class="shape-card active" data-shape="mind"><div class="shape-preview"></div><div>マインド</div></div>
+          <div class="shape-card" data-shape="process"><div class="shape-preview"></div><div>処理</div></div>
+          <div class="shape-card" data-shape="decision"><div class="shape-preview decision"></div><div>判断</div></div>
+          <div class="shape-card" data-shape="start"><div class="shape-preview start"></div><div>開始 / 終了</div></div>
+          <div class="shape-card" data-shape="container"><div class="shape-preview container"></div><div>コンテナ</div></div>
+        </div>
+        <label>接続線の種類</label>
+        <select id="connectorType">
+          <option value="orthogonal">直交</option>
+          <option value="bezier">ベジェ</option>
+          <option value="straight">直線</option>
+        </select>
+        <div class="row-wrap" style="margin-top:10px;">
+          <button id="btnAddCenter" class="primary">中央に図形を追加</button>
+          <button id="btnAutoLayout">自動レイアウト</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>編集</h2>
+        <div class="row-wrap">
+          <button id="btnUndo">Undo</button>
+          <button id="btnRedo">Redo</button>
+          <button id="btnDuplicate">複製</button>
+          <button id="btnDelete" class="danger">削除</button>
+        </div>
+        <div class="row-wrap">
+          <button id="btnAlignLeft">左揃え</button>
+          <button id="btnAlignCenter">中央揃え</button>
+          <button id="btnAlignRight">右揃え</button>
+        </div>
+        <div class="row-wrap">
+          <button id="btnAlignTop">上揃え</button>
+          <button id="btnAlignMiddle">中央揃え(縦)</button>
+          <button id="btnAlignBottom">下揃え</button>
+        </div>
+        <div class="row-wrap">
+          <button id="btnDistributeH">横方向に整列</button>
+          <button id="btnDistributeV">縦方向に整列</button>
+          <button id="btnSameSize">同じサイズ</button>
+        </div>
+        <div class="row-wrap">
+          <button id="btnGroup">グループ化</button>
+          <button id="btnUngroup">解除</button>
+        </div>
+        <div class="row-wrap">
+          <button id="btnBringFront">前面へ</button>
+          <button id="btnSendBack">背面へ</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>入出力</h2>
+        <div class="row-wrap">
+          <button id="btnSaveJson">JSON保存</button>
+          <button id="btnLoadJson">JSON読込</button>
+          <button id="btnExportPng" class="secondary">PNG書き出し</button>
+          <button id="btnExportSvg" class="secondary">SVG書き出し</button>
+          <input id="fileInput" type="file" accept="application/json" style="display:none;" />
+        </div>
+        <div class="row-wrap">
+          <button id="btnSaveLocal">ブラウザ保存</button>
+          <button id="btnLoadLocal">ブラウザ読込</button>
+          <button id="btnNew" class="warn">新規作成</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>設定</h2>
+        <label><input id="snapToggle" type="checkbox" checked /> グリッドにスナップ</label>
+        <label><input id="guideToggle" type="checkbox" checked /> 整列ガイドを表示</label>
+        <label><input id="portToggle" type="checkbox" checked /> 接続ポートを表示</label>
+      </div>
+
+      <div class="section">
+        <h2>操作</h2>
+        <div class="hint">
+          ・空白ドラッグで範囲選択<br>
+          ・<span class="kbd">Shift</span>+クリックで複数選択<br>
+          ・右下ハンドルでサイズ変更<br>
+          ・<span class="kbd">Tab</span> で次のノードを選択<br>
+          ・接続モードでノードをクリックして接続<br>
+          ・<span class="kbd">Ctrl</span>+<span class="kbd">Z</span> / <span class="kbd">Ctrl</span>+<span class="kbd">Y</span><br>
+          ・<span class="kbd">Del</span> で削除<br>
+          ・<span class="kbd">Ctrl</span>+ドラッグでパン
+        </div>
+      </div>
+    </aside>
+
+    <main class="canvas-wrap">
+      <div class="canvas-toolbar">
+        <button class="menu-btn" id="btnLeftMenu">左</button>
+        <button class="menu-btn" id="btnRightMenu">右</button>
+        <button id="zoomOut">-</button>
+        <button id="zoomReset">100%</button>
+        <button id="zoomIn">+</button>
+      </div>
+
+      <svg id="stage" xmlns="http://www.w3.org/2000/svg" aria-label="editor canvas">
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L10,5 L0,10 z" fill="#91a7ff"></path>
+          </marker>
+          <marker id="arrowSelected" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L10,5 L0,10 z" fill="#ffd166"></path>
+          </marker>
+        </defs>
+        <g id="viewport">
+          <g id="grid" class="grid"></g>
+          <g id="majorGrid" class="major-grid"></g>
+          <g id="guidesLayer"></g>
+          <g id="edgesLayer"></g>
+          <g id="nodesLayer"></g>
+          <g id="tempLayer"></g>
+          <g id="selectionLayer"></g>
+        </g>
+      </svg>
+
+      <div class="minimap">
+        <svg id="minimap" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100%" height="100%" fill="#0d1328"></rect>
+          <g id="miniContent"></g>
+          <rect id="miniViewport" class="viewport"></rect>
+        </svg>
+      </div>
+
+      <div class="floating-editor" id="floatingEditor">
+        <label>ノード編集</label>
+        <textarea id="floatingText"></textarea>
+        <div class="row-wrap" style="margin-top:8px;">
+          <button id="floatingOk" class="primary">OK</button>
+          <button id="floatingCancel">キャンセル</button>
+        </div>
+      </div>
+    </main>
+
+    <aside class="panel rightbar" id="rightbar">
+      <div class="section">
+        <h2>選択中</h2>
+        <div class="selection-list" id="selectionList"></div>
+      </div>
+
+      <div class="section">
+        <h2>プロパティ</h2>
+        <label>ラベル</label>
+        <textarea id="selectedLabel" placeholder="ノードテキスト"></textarea>
+        <div class="row">
+          <div style="flex:1;">
+            <label>幅</label>
+            <input id="selectedW" type="text" placeholder="例: 140" />
+          </div>
+          <div style="flex:1;">
+            <label>高さ</label>
+            <input id="selectedH" type="text" placeholder="例: 60" />
+          </div>
+        </div>
+        <label>ノード種別</label>
+        <select id="selectedType">
+          <option value="mind">マインドマップ</option>
+          <option value="process">フロー: 処理</option>
+          <option value="decision">フロー: 判断</option>
+          <option value="start">フロー: 開始 / 終了</option>
+          <option value="container">コンテナ</option>
+        </select>
+        <label>レイヤー</label>
+        <select id="selectedLayer"></select>
+        <div class="row-wrap" style="margin-top:10px;">
+          <button id="btnApply">適用</button>
+          <button id="btnMakeContainer">選択項目をコンテナ化</button>
+        </div>
+        <div class="status" id="status"></div>
+      </div>
+
+      <div class="section">
+        <h2>レイヤー</h2>
+        <div class="row-wrap">
+          <button id="btnAddLayer">レイヤー追加</button>
+          <button id="btnRenameLayer">名前変更</button>
+        </div>
+        <div class="layer-list" id="layerList"></div>
+      </div>
+    </aside>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
