@@ -61,6 +61,8 @@
       draggingCanvas: false,
       draggingEdgeHandle: null,
       inspectorEditing: false,
+      pointerDownInfo: null,
+      lastNodeClick: null,
       selectionRect: null,
       dragOrigins: null,
       dragStartWorld: null,
@@ -1029,6 +1031,12 @@
       const edgeHandle = getEdgeHandleTarget(e.target);
       const resizeId = getResizeTarget(e.target);
       const wantPan = state.mode === 'pan' || e.ctrlKey;
+      state.pointerDownInfo = {
+        nodeId: node?.id || null,
+        clientX: e.clientX,
+        clientY: e.clientY,
+        moved: false,
+      };
 
       if (edgeHandle && !wantPan) {
         commitHistory();
@@ -1097,6 +1105,11 @@
       const world = screenToWorld(e.clientX, e.clientY);
       state.tempMouse = world;
       state.guides = [];
+      if (state.pointerDownInfo) {
+        const dx = e.clientX - state.pointerDownInfo.clientX;
+        const dy = e.clientY - state.pointerDownInfo.clientY;
+        if ((dx * dx + dy * dy) > 16) state.pointerDownInfo.moved = true;
+      }
       if (state.resizingNodeId) {
         const n = getNode(state.resizingNodeId);
         if (!n) return;
@@ -1153,7 +1166,9 @@
       if (state.mode === 'connect' && state.connectFrom) drawTemp();
     });
 
-    svg.addEventListener('pointerup', () => {
+    svg.addEventListener('pointerup', (e) => {
+      const clickedNode = state.pointerDownInfo?.nodeId ? getNode(state.pointerDownInfo.nodeId) : null;
+      const clickInfo = state.pointerDownInfo;
       state.draggingNodeIds = null;
       state.draggingEdgeHandle = null;
       state.resizingNodeId = null;
@@ -1176,16 +1191,19 @@
         state.selectionRect = null;
         render();
       }
+      if (clickInfo?.nodeId && clickedNode && !clickInfo.moved) {
+        const now = Date.now();
+        if (state.lastNodeClick && state.lastNodeClick.nodeId === clickedNode.id && (now - state.lastNodeClick.at) < 350) {
+          openFloatingEditor(clickedNode, e.clientX, e.clientY);
+          state.lastNodeClick = null;
+        } else {
+          state.lastNodeClick = { nodeId: clickedNode.id, at: now };
+        }
+      } else if (clickInfo && !clickInfo.moved) {
+        state.lastNodeClick = null;
+      }
+      state.pointerDownInfo = null;
     });
-    const handleNodeDoubleClick = (e) => {
-      const node = getHitNode(e.target);
-      if (!node) return;
-      e.preventDefault();
-      e.stopPropagation();
-      openFloatingEditor(node, e.clientX, e.clientY);
-    };
-    svg.addEventListener('dblclick', handleNodeDoubleClick);
-    nodesLayer.addEventListener('dblclick', handleNodeDoubleClick);
     svg.addEventListener('wheel', (e) => {
       e.preventDefault();
       const rect = svg.getBoundingClientRect();
