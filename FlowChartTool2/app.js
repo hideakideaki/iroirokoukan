@@ -636,6 +636,7 @@
       const child = addNodeAt(base.x + base.w + 80, base.y, state.shapeToAdd);
       state.edges.push(createEdge(base.id, child.id));
       render();
+      openFloatingEditorForNode(child);
     }
     function addSiblingBelowNode() {
       const base = getPrimaryNode();
@@ -648,6 +649,7 @@
       const sibling = addNodeAt(base.x, base.y + Math.max(base.h, 60) + 70, state.shapeToAdd);
       state.edges.push(createEdge(parent.id, sibling.id));
       render();
+      openFloatingEditorForNode(sibling);
     }
     function connectNodes(fromId, toId) {
       if (!fromId || !toId || fromId === toId) return;
@@ -900,6 +902,12 @@
       floatingEditor.style.display = 'block';
       floatingText.focus();
       floatingText.select();
+    }
+    function openFloatingEditorForNode(node) {
+      const rect = svg.getBoundingClientRect();
+      const clientX = rect.left + ((node.x - state.view.x) * state.view.scale);
+      const clientY = rect.top + ((node.y - state.view.y) * state.view.scale);
+      openFloatingEditor(node, clientX, clientY);
     }
     function closeFloatingEditor() {
       floatingEditor.style.display = 'none';
@@ -1528,6 +1536,11 @@
       node.label = floatingText.value.trim() || node.label;
       closeFloatingEditor();
       render();
+    });
+    floatingText.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' || e.shiftKey) return;
+      e.preventDefault();
+      document.getElementById('floatingOk').click();
     });
     document.getElementById('floatingCancel').addEventListener('click', closeFloatingEditor);
     document.getElementById('minimap').addEventListener('click', (e) => {
