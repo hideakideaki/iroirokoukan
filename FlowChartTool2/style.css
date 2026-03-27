@@ -222,16 +222,16 @@
     .edge.selected { stroke: #ffd166; stroke-width: 3.5; }
     .edge-hit { stroke: transparent; stroke-width: 14; fill: none; cursor: pointer; }
     .node .shape {
-      fill: #192447;
-      stroke: #7389df;
-      stroke-width: 2;
+      fill: var(--node-fill, #192447);
+      stroke: var(--node-stroke, #7389df);
+      stroke-width: var(--node-stroke-width, 2);
       filter: drop-shadow(0 8px 18px rgba(0,0,0,.22));
     }
     .node.primary-selected .shape { stroke: #ffd166; stroke-width: 3.2; }
     .node.multi-selected .shape { stroke: #5eead4; stroke-width: 2.8; }
     .node.container .shape {
-      fill: rgba(63, 92, 173, 0.18);
-      stroke: #7aa2ff;
+      fill: var(--node-fill, rgba(63, 92, 173, 0.18));
+      stroke: var(--node-stroke, #7aa2ff);
       stroke-dasharray: 8 5;
     }
     .node .label {

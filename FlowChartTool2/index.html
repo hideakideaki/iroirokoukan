@@ -18,6 +18,8 @@
           <button type="button" data-trigger="btnLoadJson">JSON読込</button>
           <button type="button" data-trigger="btnSaveMermaid">Mermaid保存</button>
           <button type="button" data-trigger="btnLoadMermaid">Mermaid読込</button>
+          <button type="button" data-trigger="btnSaveText">Text保存</button>
+          <button type="button" data-trigger="btnLoadText">Text読込</button>
           <button type="button" data-trigger="btnSaveLocal">ブラウザ保存</button>
           <button type="button" data-trigger="btnLoadLocal">ブラウザ読込</button>
           <button type="button" data-trigger="btnExportPng">PNG書き出し</button>
@@ -161,9 +163,11 @@
           <button id="btnLoadJson">JSON読込</button>
           <button id="btnSaveMermaid">Mermaid保存</button>
           <button id="btnLoadMermaid">Mermaid読込</button>
+          <button id="btnSaveText">Text保存</button>
+          <button id="btnLoadText">Text読込</button>
           <button id="btnExportPng" class="secondary">PNG書き出し</button>
           <button id="btnExportSvg" class="secondary">SVG書き出し</button>
-          <input id="fileInput" type="file" accept=".json,.mmd,.mermaid,text/plain" style="display:none;" />
+          <input id="fileInput" type="file" accept=".json,.mmd,.mermaid,.txt,text/plain" style="display:none;" />
         </div>
         <div class="row-wrap">
           <button id="btnSaveLocal">ブラウザ保存</button>
@@ -272,6 +276,24 @@
             <input id="selectedH" type="text" placeholder="例: 60" />
           </div>
         </div>
+        <div class="row">
+          <div style="flex:1;">
+            <label>塗り色</label>
+            <input id="selectedFill" type="color" value="#192447" />
+          </div>
+          <div style="flex:1;">
+            <label>枠線色</label>
+            <input id="selectedStroke" type="color" value="#7389df" />
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1;">
+            <label>文字色</label>
+            <input id="selectedTextColor" type="color" value="#ffffff" />
+          </div>
+          <div style="flex:1;"></div>
+        </div>
+        <label><input id="selectedNoStroke" type="checkbox" /> 枠線なし</label>
         <label>ノード種別</label>
         <select id="selectedType">
           <option value="mind">マインドマップ</option>

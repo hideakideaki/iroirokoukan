@@ -20,6 +20,10 @@
     const selectedLabel = document.getElementById('selectedLabel');
     const selectedW = document.getElementById('selectedW');
     const selectedH = document.getElementById('selectedH');
+    const selectedFill = document.getElementById('selectedFill');
+    const selectedStroke = document.getElementById('selectedStroke');
+    const selectedTextColor = document.getElementById('selectedTextColor');
+    const selectedNoStroke = document.getElementById('selectedNoStroke');
     const selectedType = document.getElementById('selectedType');
     const selectedLayer = document.getElementById('selectedLayer');
     const selectionList = document.getElementById('selectionList');
@@ -441,9 +445,13 @@
         const path = createSvg('path');
         path.setAttribute('class', 'shape');
         path.setAttribute('d', shapePath({ ...node, x: 0, y: 0 }));
+        path.style.setProperty('--node-fill', node.fill || '#192447');
+        path.style.setProperty('--node-stroke', node.noStroke ? 'transparent' : (node.stroke || '#7389df'));
+        path.style.setProperty('--node-stroke-width', node.noStroke ? '0' : '2');
         g.appendChild(path);
         const text = createSvg('text');
         text.setAttribute('class', 'label');
+        text.style.fill = node.textColor || '#ffffff';
         const lines = wrapText(node.label, Math.max(8, Math.floor(node.w / 14)));
         const startY = lines.length === 1 ? 0 : -(lines.length - 1) * 9;
         lines.forEach((line, idx) => {
@@ -573,12 +581,20 @@
         if (active !== selectedLabel) selectedLabel.value = node.label;
         if (active !== selectedW) selectedW.value = String(node.w);
         if (active !== selectedH) selectedH.value = String(node.h);
+        if (active !== selectedFill) selectedFill.value = node.fill || '#192447';
+        if (active !== selectedStroke) selectedStroke.value = node.stroke || '#7389df';
+        if (active !== selectedTextColor) selectedTextColor.value = node.textColor || '#ffffff';
+        if (active !== selectedNoStroke) selectedNoStroke.checked = !!node.noStroke;
         if (active !== selectedType) selectedType.value = node.type;
         if (active !== selectedLayer) selectedLayer.value = node.layerId || state.activeLayerId;
       } else {
         selectedLabel.value = '';
         selectedW.value = '';
         selectedH.value = '';
+        selectedFill.value = '#192447';
+        selectedStroke.value = '#7389df';
+        selectedTextColor.value = '#ffffff';
+        selectedNoStroke.checked = false;
         selectedType.value = 'mind';
         selectedLayer.value = state.activeLayerId;
       }
@@ -614,11 +630,11 @@
     function nextZ() { return state.nodes.reduce((m, n) => Math.max(m, n.z || 0), 0) + 1; }
     function addNodeAt(x, y, type = state.shapeToAdd) {
       const presets = {
-        mind: { w: 150, h: 60, label: '新規ノード', type: 'mind' },
-        process: { w: 150, h: 60, label: '処理', type: 'process' },
-        decision: { w: 140, h: 90, label: '判断', type: 'decision' },
-        start: { w: 170, h: 54, label: '開始 / 終了', type: 'start' },
-        container: { w: 260, h: 180, label: 'コンテナ', type: 'container' },
+        mind: { w: 150, h: 60, label: '新規ノード', type: 'mind', fill: '#192447', stroke: '#7389df', textColor: '#ffffff', noStroke: false },
+        process: { w: 150, h: 60, label: '処理', type: 'process', fill: '#192447', stroke: '#7389df', textColor: '#ffffff', noStroke: false },
+        decision: { w: 140, h: 90, label: '判断', type: 'decision', fill: '#3a254d', stroke: '#7389df', textColor: '#ffffff', noStroke: false },
+        start: { w: 170, h: 54, label: '開始 / 終了', type: 'start', fill: '#17304f', stroke: '#7389df', textColor: '#ffffff', noStroke: false },
+        container: { w: 260, h: 180, label: 'コンテナ', type: 'container', fill: 'rgba(63, 92, 173, 0.18)', stroke: '#7aa2ff', textColor: '#ffffff', noStroke: false },
       };
       const p = presets[type] || presets.mind;
       const node = { id: uid('n'), x: maybeSnap(x), y: maybeSnap(y), z: nextZ(), layerId: state.activeLayerId, groupId: null, ...p };
@@ -921,6 +937,10 @@
       node.label = nextLabel || node.label;
       node.w = clamp(parseInt(selectedW.value || node.w, 10) || node.w, 60, 700);
       node.h = clamp(parseInt(selectedH.value || node.h, 10) || node.h, 36, 500);
+      node.fill = selectedFill.value || node.fill || '#192447';
+      node.stroke = selectedStroke.value || node.stroke || '#7389df';
+      node.textColor = selectedTextColor.value || node.textColor || '#ffffff';
+      node.noStroke = !!selectedNoStroke.checked;
       node.type = selectedType.value;
       node.layerId = selectedLayer.value || node.layerId;
       render();
@@ -979,6 +999,95 @@
         if (fromId && toId) lines.push(`  ${fromId} --> ${toId}`);
       });
       return lines.join('\n');
+    }
+    function sortNodesForTree(ids, nodeMap) {
+      return [...ids].sort((a, b) => {
+        const na = nodeMap.get(a);
+        const nb = nodeMap.get(b);
+        if (!na || !nb) return 0;
+        if (na.y !== nb.y) return na.y - nb.y;
+        return na.x - nb.x;
+      });
+    }
+    function exportIndentedText() {
+      const nodeMap = new Map(state.nodes.map(node => [node.id, node]));
+      const childMap = new Map(state.nodes.map(node => [node.id, []]));
+      const incoming = new Map(state.nodes.map(node => [node.id, 0]));
+      state.edges.forEach((edge) => {
+        if (!childMap.has(edge.from) || !nodeMap.has(edge.to)) return;
+        childMap.get(edge.from).push(edge.to);
+        incoming.set(edge.to, (incoming.get(edge.to) || 0) + 1);
+      });
+      const roots = sortNodesForTree(
+        state.nodes.filter(node => (incoming.get(node.id) || 0) === 0).map(node => node.id),
+        nodeMap
+      );
+      const lines = [];
+      const visited = new Set();
+      const walk = (id, depth) => {
+        if (visited.has(id)) return;
+        visited.add(id);
+        const node = nodeMap.get(id);
+        if (!node) return;
+        lines.push(`${'\t'.repeat(depth)}${String(node.label || '').replace(/\n/g, '\\n')}`);
+        sortNodesForTree(childMap.get(id) || [], nodeMap).forEach(childId => walk(childId, depth + 1));
+      };
+      roots.forEach(rootId => walk(rootId, 0));
+      sortNodesForTree(state.nodes.map(node => node.id).filter(id => !visited.has(id)), nodeMap).forEach(id => walk(id, 0));
+      return lines.join('\n');
+    }
+    function createEdgeBetweenNodes(fromNode, toNode, connector = 'orthogonal') {
+      const sides = inferPortSides(fromNode, toNode);
+      return { id: uid('e'), from: fromNode.id, to: toNode.id, connector, fromSide: sides.fromSide, toSide: sides.toSide };
+    }
+    function importIndentedText(text) {
+      const rawLines = String(text || '').replace(/\r\n/g, '\n').split('\n');
+      const parsed = rawLines
+        .map((line) => {
+          const match = line.match(/^(\t*)(.*)$/);
+          const tabs = match ? match[1].length : 0;
+          const content = (match ? match[2] : line).trimEnd();
+          return { depth: tabs, label: content };
+        })
+        .filter(item => item.label.trim().length);
+      if (!parsed.length) throw new Error('No text nodes found');
+      const nodes = [];
+      const edges = [];
+      const parentStack = [];
+      const depthCounts = new Map();
+      parsed.forEach((item) => {
+        const depth = item.depth;
+        const row = depthCounts.get(depth) || 0;
+        depthCounts.set(depth, row + 1);
+        const node = {
+          id: uid('n'),
+          x: maybeSnap(depth * 240),
+          y: maybeSnap(row * 120),
+          w: 150,
+          h: 60,
+          label: item.label.replace(/\\n/g, '\n'),
+          type: 'mind',
+          z: nextZ() + nodes.length + 1,
+          layerId: 'layer_default',
+          groupId: null,
+        };
+        nodes.push(node);
+        parentStack[depth] = node;
+        parentStack.length = depth + 1;
+        if (depth > 0 && parentStack[depth - 1]) {
+          edges.push(createEdgeBetweenNodes(parentStack[depth - 1], node, 'orthogonal'));
+        }
+      });
+      loadData({
+        version: 3,
+        nodes,
+        edges,
+        layers: [{ id: 'layer_default', name: 'Default', visible: true, locked: false }],
+        activeLayerId: 'layer_default',
+        groups: [],
+        idSeq: state.idSeq,
+        view: { x: -160, y: -120, scale: 1 },
+      });
     }
     function parseMermaidEndpoint(spec) {
       const trimmed = spec.trim().replace(/;$/, '');
@@ -1096,7 +1205,15 @@
       });
     }
     function loadData(data) {
-      state.nodes = Array.isArray(data.nodes) ? data.nodes : [];
+      state.nodes = Array.isArray(data.nodes)
+        ? data.nodes.map((node) => ({
+            fill: '#192447',
+            stroke: '#7389df',
+            textColor: '#ffffff',
+            noStroke: false,
+            ...node,
+          }))
+        : [];
       state.edges = Array.isArray(data.edges) ? data.edges : [];
       state.layers = Array.isArray(data.layers) && data.layers.length ? data.layers : [{ id: 'layer_default', name: 'Default', visible: true, locked: false }];
       state.activeLayerId = data.activeLayerId || state.layers[0].id;
@@ -1118,6 +1235,10 @@
     function downloadMermaid() {
       downloadText(exportMermaid(), `diagram_${formatTimestamp()}.mmd`, 'text/plain;charset=utf-8');
       setStatus('Mermaidを保存しました');
+    }
+    function downloadIndentedText() {
+      downloadText(exportIndentedText(), `diagram_${formatTimestamp()}.txt`, 'text/plain;charset=utf-8');
+      setStatus('テキストを保存しました');
     }
     function saveLocal() {
       localStorage.setItem('diagram_editor_data_v3', JSON.stringify(serialize()));
@@ -1185,10 +1306,10 @@
 
     function createInitial() {
       state.nodes = [
-        { id: uid('n'), x: 0, y: 0, w: 160, h: 70, label: '中心トピック', type: 'mind', z: 1, layerId: 'layer_default', groupId: null },
-        { id: uid('n'), x: -220, y: -110, w: 150, h: 60, label: '項目A', type: 'mind', z: 2, layerId: 'layer_default', groupId: null },
-        { id: uid('n'), x: 220, y: -80, w: 150, h: 60, label: '項目B', type: 'mind', z: 3, layerId: 'layer_default', groupId: null },
-        { id: uid('n'), x: 250, y: 120, w: 150, h: 60, label: '項目C', type: 'mind', z: 4, layerId: 'layer_default', groupId: null },
+        { id: uid('n'), x: 0, y: 0, w: 160, h: 70, label: '中心トピック', type: 'mind', z: 1, layerId: 'layer_default', groupId: null, fill: '#192447', stroke: '#7389df', textColor: '#ffffff', noStroke: false },
+        { id: uid('n'), x: -220, y: -110, w: 150, h: 60, label: '項目A', type: 'mind', z: 2, layerId: 'layer_default', groupId: null, fill: '#192447', stroke: '#7389df', textColor: '#ffffff', noStroke: false },
+        { id: uid('n'), x: 220, y: -80, w: 150, h: 60, label: '項目B', type: 'mind', z: 3, layerId: 'layer_default', groupId: null, fill: '#192447', stroke: '#7389df', textColor: '#ffffff', noStroke: false },
+        { id: uid('n'), x: 250, y: 120, w: 150, h: 60, label: '項目C', type: 'mind', z: 4, layerId: 'layer_default', groupId: null, fill: '#192447', stroke: '#7389df', textColor: '#ffffff', noStroke: false },
       ];
       state.edges = [
         createEdge(state.nodes[0].id, state.nodes[1].id, 'orthogonal'),
@@ -1468,12 +1589,12 @@
     document.getElementById('btnBringFront').addEventListener('click', bringFront);
     document.getElementById('btnSendBack').addEventListener('click', sendBack);
     document.getElementById('btnApply').addEventListener('click', () => applyInspectorChanges(true));
-    [selectedLabel, selectedW, selectedH].forEach((el) => {
+    [selectedLabel, selectedW, selectedH, selectedFill, selectedStroke, selectedTextColor].forEach((el) => {
       el.addEventListener('focus', beginInspectorEdit);
       el.addEventListener('blur', endInspectorEdit);
       el.addEventListener('input', () => applyInspectorChanges(!state.inspectorEditing));
     });
-    [selectedType, selectedLayer].forEach((el) => {
+    [selectedType, selectedLayer, selectedNoStroke].forEach((el) => {
       el.addEventListener('focus', beginInspectorEdit);
       el.addEventListener('blur', endInspectorEdit);
       el.addEventListener('change', () => applyInspectorChanges(!state.inspectorEditing));
@@ -1489,6 +1610,11 @@
     document.getElementById('btnSaveMermaid').addEventListener('click', downloadMermaid);
     document.getElementById('btnLoadMermaid').addEventListener('click', () => {
       fileInput.dataset.format = 'mermaid';
+      fileInput.click();
+    });
+    document.getElementById('btnSaveText').addEventListener('click', downloadIndentedText);
+    document.getElementById('btnLoadText').addEventListener('click', () => {
+      fileInput.dataset.format = 'text';
       fileInput.click();
     });
     document.getElementById('btnExportPng').addEventListener('click', exportPng);
@@ -1517,15 +1643,22 @@
         if (selectedFormat === 'mermaid' || name.endsWith('.mmd') || name.endsWith('.mermaid')) {
           importMermaid(text);
           setStatus('Mermaidを読み込みました');
+        } else if (selectedFormat === 'text' || name.endsWith('.txt')) {
+          importIndentedText(text);
+          setStatus('テキストを読み込みました');
         } else {
           loadData(JSON.parse(text));
           setStatus('JSONを読み込みました');
         }
       }
       catch {
-        alert(selectedFormat === 'mermaid' || name.endsWith('.mmd') || name.endsWith('.mermaid')
-          ? 'Mermaidの読み込みに失敗しました'
-          : 'JSONの読み込みに失敗しました');
+        alert(
+          selectedFormat === 'mermaid' || name.endsWith('.mmd') || name.endsWith('.mermaid')
+            ? 'Mermaidの読み込みに失敗しました'
+            : selectedFormat === 'text' || name.endsWith('.txt')
+              ? 'テキストの読み込みに失敗しました'
+              : 'JSONの読み込みに失敗しました'
+        );
       }
       finally { fileInput.value = ''; fileInput.dataset.format = ''; }
     });
