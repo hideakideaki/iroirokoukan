@@ -1,0 +1,50 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; color: #1f2937; background: #f7f7f8; }
+body { min-height: 100vh; }
+.app { display: grid; grid-template-columns: clamp(320px, 36vw, 520px) minmax(0, 1fr); min-height: 100vh; }
+.sidebar { border-right: 1px solid #e5e7eb; background: #fff; padding: 16px; overflow: auto; min-width: 0; }
+.main { overflow: auto; padding: 24px; min-width: 0; }
+.brand h1 { margin: 0 0 6px; font-size: 22px; }
+.meta { color: #6b7280; font-size: 12px; line-height: 1.5; }
+.search-box { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 16px; }
+.search-box input, .toolbar select, .search-box button { border: 1px solid #d1d5db; border-radius: 10px; padding: 10px 12px; font-size: 14px; background: #fff; }
+.search-box input { min-width: 0; }
+.search-box button { cursor: pointer; white-space: nowrap; }
+.toolbar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 12px; font-size: 13px; color: #374151; }
+.results-info { margin-top: 12px; color: #6b7280; font-size: 12px; line-height: 1.5; }
+.results { margin-top: 12px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; min-width: 0; overflow-x: hidden; }
+.result-item { appearance: none; display: block; inline-size: 100%; max-inline-size: 100%; min-inline-size: 0; text-align: left; border: 1px solid #e5e7eb; border-radius: 14px; padding: 12px; background: #fff; cursor: pointer; transition: transform .08s ease, box-shadow .08s ease; overflow: hidden; }
+.result-item:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,.06); }
+.result-item.active { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+.result-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; line-height: 1.5; overflow-wrap: anywhere; word-break: break-word; }
+.result-path { color: #6b7280; font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; word-break: break-word; }
+.result-snippet { margin-top: 8px; font-size: 13px; color: #374151; line-height: 1.65; white-space: normal; overflow-wrap: anywhere; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+mark { background: #fde68a; padding: 0 2px; border-radius: 3px; }
+.empty { border: 1px dashed #d1d5db; border-radius: 16px; background: #fff; padding: 24px; color: #6b7280; }
+.viewer { max-width: 1000px; margin: 0 auto; background: #fff; border: 1px solid #e5e7eb; border-radius: 18px; padding: 24px; }
+.hidden { display: none !important; }
+.viewer-header h2 { margin: 0; font-size: 28px; line-height: 1.35; overflow-wrap: anywhere; }
+.viewer-sub { margin-top: 6px; display: flex; gap: 14px; flex-wrap: wrap; color: #6b7280; font-size: 12px; }
+.tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+.tag { display: inline-flex; align-items: center; padding: 4px 8px; border-radius: 999px; background: #eff6ff; color: #1d4ed8; font-size: 12px; border: 1px solid #bfdbfe; }
+.viewer-body { margin-top: 20px; line-height: 1.8; font-size: 15px; word-break: break-word; overflow-wrap: anywhere; }
+.viewer-body h1, .viewer-body h2, .viewer-body h3, .viewer-body h4, .viewer-body h5, .viewer-body h6 { line-height: 1.35; margin: 1.25em 0 .55em; }
+.viewer-body p { margin: .65em 0; }
+.viewer-body pre { background: #111827; color: #f9fafb; padding: 14px; border-radius: 12px; overflow: auto; }
+.viewer-body code { background: #f3f4f6; padding: .1em .35em; border-radius: 6px; }
+.viewer-body pre code { background: transparent; padding: 0; }
+.viewer-body blockquote { margin: 1em 0; padding: .75em 1em; border-left: 4px solid #d1d5db; background: #f9fafb; color: #374151; }
+.viewer-body img { max-width: 100%; height: auto; border-radius: 12px; border: 1px solid #e5e7eb; }
+.viewer-body table { border-collapse: collapse; width: 100%; margin: 1em 0; display: block; overflow-x: auto; }
+.viewer-body th, .viewer-body td { border: 1px solid #d1d5db; padding: 8px 10px; text-align: left; }
+.viewer-body a { color: #2563eb; text-decoration: none; }
+.viewer-body a:hover { text-decoration: underline; }
+.attachments-wrap { margin-top: 28px; }
+.attachments { padding-left: 18px; }
+.attachments li { margin: 6px 0; }
+@media (max-width: 960px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { border-right: 0; border-bottom: 1px solid #e5e7eb; }
+  .main { padding: 16px; }
+  .viewer { padding: 18px; }
+}

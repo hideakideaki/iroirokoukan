@@ -1,0 +1,871 @@
+{
+  "generated_at": "2026-04-05T15:58:47.084557+09:00",
+  "vault": {
+    "notes_dir": "notes",
+    "attachments_dir": "attachments"
+  },
+  "notes": [
+    {
+      "id": "notes/000_技術メモの取り方/00_メモの方針.md",
+      "title": "00_メモの方針",
+      "path": "notes/000_技術メモの取り方/00_メモの方針.md",
+      "body": "\n2023/1/9\n- 技術メモ：Obsidian＋パワポ\n\t- 直接Obsidianに書き込む\n\t- 本などをパワポにまとめて、そのリンクとスクショをObsidianに貼る\n\t- Obsidianに書いたスクショをOneNoteに張り付ける\n\t\t- OneNoteは画像内の検索も可能なため（精度はあれかもだが・・・・）\n- 日常メモ：Evernote\n\t- 買うもの\n\t- 遊んだ記録\n\n## メリットデメリット\n\n- チェックボックス一括解除\n\t- Evernote：×\n\t- Onenote：〇\n\t- Obsidian：×\n- 表作成\n\t- Obsidian×\n- 同期\n\t- OneNote × \n\t\t- スマホでしか変更してないのに競合する\n\t\n\n\n\n\n\n\n\n\n",
+      "headings": [
+        "メリットデメリット"
+      ],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2023-11-23T17:23:44+09:00"
+    },
+    {
+      "id": "notes/000_技術メモの取り方/20211010_技術メモツール.md",
+      "title": "20211010_技術メモツール",
+      "path": "notes/000_技術メモの取り方/20211010_技術メモツール.md",
+      "body": "\n\n\n## 比較\n\n### Obsidian\n\n#### メリット\n- ライブ編集可能\n\n### Joplin\n#### デメリット\n- エディタが貧弱\n\t- Ctrl+Dでの選択ができない\n\t- 行コピーなどができない\n- 実行ファイルとノート置き場を分けられない\n#### メリット\n- フォルダ階層の深さ自由\n- フォルダとファイルが別ペイン\n- 日付時刻記入ボタンがある\n- ライブ編集可能\n\n### BoostNote\n\n\n\n\n\n\n\n\n## 重要な点\n- やめやすさ\n\t- 気に入らなくなったら別アプリへ簡単に移行できるような\n\t- OneNoteは論外　移行できない\n\t- Evernoteも移行は面倒\n\t\t- 50ページずつしかエクスポートできなくなった\n- 検索可能なこと\n\n\n\n## 参考ブログ\n\n- VSCodeでやってる人\n\t- https://qiita.com/ponwink/items/ff968932e830d352010a\n\t- テキストファイル\n\t- 画像入れられないね\n- DropboxPaperでやってる人\n\t- https://qiita.com/tmaruno/items/003ec5b17f53bdc08ffa\n\t- ブラウザベース\n\t- 不安定な部分がある\n\t- オフラインでできない\n\n\n",
+      "headings": [
+        "比較",
+        "Obsidian",
+        "メリット",
+        "Joplin",
+        "デメリット",
+        "メリット",
+        "BoostNote",
+        "重要な点",
+        "参考ブログ"
+      ],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-10-20T07:55:21+09:00"
+    },
+    {
+      "id": "notes/000_技術メモの取り方/Obsidian使い方.md",
+      "title": "Obsidian使い方",
+      "path": "notes/000_技術メモの取り方/Obsidian使い方.md",
+      "body": "\n[メモツールObsidianの使い方](https://qiita.com/koKekkoh/items/f1f684f0d7dadb658d02)\n\n## サードパーティー\n[カレンダー](https://pouhon.net/obsidian-calendar/5996/)\n\n\n## 以下\nhttps://note.com/takibayashi/n/nbf9d6e38ede2?magazine_key=m38cd2861c756\n\n```mermaid\npie title 今週のポモドーロ\n\t\"月\": 6\n\t\"火\": 10\n\t\"水\": 11\n\t\"木\": 20\n\t\"金\": 10\n\t\"土\": 8\n\t\"日\": 5\n```\n\n\n```mermaid\ngraph LR\nA[メモ力をあげるには?]\nA --> B[smart notesをとりはじめる]\nA --> C[他の人からもっと学ぶ]\nA --> D[文字数を計測してみる]\nB --> E[ネット記事などで試す]\nB --> G[読書で試す]\nC --> F[Roamユーザーから学ぶ]\n```\n\n```mermaid\njourney\n   title 今日の１日の可視化\n   section リモートワーク開始\n     TODO A & B: 5: 実際\n     メール返信: 3: 予想\n     プロジェクト C: 1: 実際, 予想\n   section 仕事終了後（オフ）\n     note記事を書く: 5: 予想, 実際\n     映画を見る: 4: 実際\n```\n",
+      "headings": [
+        "サードパーティー",
+        "以下"
+      ],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-03-23T07:53:49+09:00"
+    },
+    {
+      "id": "notes/000_技術メモの取り方/Obsidian活用法ブログ.md",
+      "title": "Obsidian活用法ブログ",
+      "path": "notes/000_技術メモの取り方/Obsidian活用法ブログ.md",
+      "body": "\n\n読書ノートなどについて、1要素1ページにまとめると理解が深まる。（すごく大変なので）\nhttps://knowledgestuck.substack.com/p/688\n\n\nフォルダ構造ではなく、リンクでノートをつなげよう。フォルダだと言ってみればタグ1つだけの状態。リンクにすれば、複数のタグ（複数の視点）でまとめられる。\nMOC（リンク集）のノートを作り、そこにタグごとのノートのリンクを張るイメージ。\nhttps://knowledgestuck.substack.com/p/moc\n\n",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-07-22T07:52:05+09:00"
+    },
+    {
+      "id": "notes/000_技術メモの取り方/勉強方法について.md",
+      "title": "勉強方法について",
+      "path": "notes/000_技術メモの取り方/勉強方法について.md",
+      "body": "\n## 結論\n2022/12/28\n- まとめはパワポで作る\n- パワポのスクショをObsidianに貼るなどして、Obsidianに集約していく\n\n- 細かい内容を個別に調べる場合、Obsidianに直接記載でも可\n\n\n\n\n## 内容\n\n\n### 悩み事\n- 本やwebなどで勉強しているときに、メモやまとめをどうやってとるか\n\n- 気軽にメモを取りたい\n- スクショを張り付けたい\n- 張り付けた内容に吹き出しとか入れたい\n- 気軽に参照したい\n\n\n### 手法\n\n\n#### obsidian(markdown エディタ)\n- 比較が難しい（markdownでは表を作るのが面倒　この記事も本当は表にしたい）\n- 画像の見た目（大きさ）の変更不可\n\t- 幅いっぱいに張り付けられ大きすぎて邪魔\n\n\n#### one note\n- 検索が弱い\n- 自由度が高いようで低い\n\t- 無限キャンパスだが、、、\n\t\t- 画像を横に並べるのも面倒\n\t\t- 画像に書き込みしても、改行でずれる\n- ほかのツールへ移行ができない\n\n#### パワポ\n\n\n#### エクセル\n\n\n#### GoodNote\n- iPadでしか編集できない\n\n\n\n\n\n",
+      "headings": [
+        "結論",
+        "内容",
+        "悩み事",
+        "手法",
+        "obsidian(markdown エディタ)",
+        "one note",
+        "パワポ",
+        "エクセル",
+        "GoodNote"
+      ],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-12-28T10:19:34+09:00"
+    },
+    {
+      "id": "notes/001_ToDo/2021お盆予定.md",
+      "title": "2021お盆予定",
+      "path": "notes/001_ToDo/2021お盆予定.md",
+      "body": "\n\n ## 目標\n- [x] セルフカット\n- [ ] 理系なら知っておきたい数学の基本ノート_線形代数編\n- [ ] ガウス過程\n- [ ] ランダムウォークを読む\n- [ ] カルマンフィルタ\n\n\n\n2021/08/06\n- セルフカット\n\n2021/08/07\n- ざま\n\n2021/08/08\n- \n\n2021/08/09\n- プログラミングのための確率　8章\n\n\n2021/08/10\n\n\n2021/08/11\n- ざま？\n\n\n2021/08/12\n- ボイトレ\n\n2021/08/13\n\n\n2021/08/14\n- ざま？\n\n2021/08/15\n",
+      "headings": [
+        "目標"
+      ],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2021-08-10T11:00:52+09:00"
+    },
+    {
+      "id": "notes/001_ToDo/2021年末.md",
+      "title": "2021年末",
+      "path": "notes/001_ToDo/2021年末.md",
+      "body": "\n### 12/25\n- 賃貸契約\n- 家電量販店下見\n\n### 12/26\n- ジム\n\n### 12/27\n- [x] セルフカット\n- [x] 家電仮決め\n- [x] ネット会社仮決め\n\t- biglobeにする？\n- [x] 口座仮決め\n\t- auじぶん？\n\n### 12/28\n- [] 賃貸部屋の図面作る\n- [] スマホ回線決める\n\n\n### 12/29\n- [ ] ざま弟　一番下　すがのしょうへいさんに会う\n- [ ] カラオケ\n\n### 12/30\n\n\n### 12/31\n- [ ] エディオン\n- [ ] \n\n",
+      "headings": [
+        "12/25",
+        "12/26",
+        "12/27",
+        "12/28",
+        "12/29",
+        "12/30",
+        "12/31"
+      ],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2021-12-30T14:13:03+09:00"
+    },
+    {
+      "id": "notes/001_ToDo/2022GW.md",
+      "title": "2022GW",
+      "path": "notes/001_ToDo/2022GW.md",
+      "body": "\n2022/4/30-2022/5/8\n\n## 2022/4/30\n- ざま母祖母家と食事会　宇品プリンスホテル　なだ万\n\t- 10時出発　ざま母車で\n\t- 11時着\n\t- 12:00開始\n\t- 14:00終了　遼太さん車で本通りへ\n\t- 参加者（ざま呼び）\n\t\t- 川村家\n\t\t\t- 祖母\n\t\t\t- 晃一にいちゃん　車いす　将棋\n\t\t- 横手家\n\t\t\t- 横手のおじちゃん　県職員　牡蠣養殖\n\t\t\t- よれいねいちゃん　ざま母の妹\n\t\t\t- ゆうちゃん　車いす\n\t\t- 遼太さん\n\t\t- 讃井　瑞希　（さない　みずき）　24歳くらい　Ｎo Music No Lifeの人\n\n- 指輪見学\n\t- 14:30本通り着\n\t- NIWAKA\n\t- ビジュピコ\n\t- EXELCO\n- 夕食\n\t- そば　香り家　かも南蛮\n- ＡESOP 　お返し買った\n\n## 2022/5/1\n- 午前：ゆめタウン五日市に散歩\n- 午後：少し部屋を掃除\n\n## 2022/5/2\n- NEC ノートPCにxubuntuをインストール\n\t- BIOSで以下を設定\n\t\t- USBレガシーをON\n\t\t- USB起動を優先にする\n\n## 2022/5/3\n- 指輪見学\n\t- 10:00出発\n\t- 11:00 福屋のシャネルへ\n\t\t- 指輪取り扱いがなかった\n\t\t- ざまは婚約指輪としてココクラッシュが欲しいらしい\n\t- エクセルコへ移動\n\t\t- 結婚指輪購入　支払いざま\n\t\t- 6/16～7/15受け取り可能\n- 昼食　\n\t- 炉ばた 焔仁　海鮮丼\n- アルパークへ移動\n\t- 無印見学\n\t- スタバ\n\t- ユニクロ　リネンシャツ購入\n\t- ニトリ　ゴミ箱購入\n\n## 2022/5/4\n- 岡山へ\n\t- 5時過ぎ起床\n\t- 7:30出発\n\t- 7:51五日市発　9時前岡山駅着\n- 岡山県立美術館\n\t- ドラえもん展\n\t- 10:30まで見た\n- 観音山フルーツパーラー\n\t- 11:00 前到着　ギリギリ入れた\n\t- かんきつパフェ　母の日パフェ\n- イオンへ\n- 実家へ\n\t- 12:42発　茶屋町へ\n\t- 寿司　唐揚げ　ケーキ\n\t- 17時ころまで\n- カフェへ\n\t- 三澤カーwith 日笠　実家に来てもらった\n\t- 西洋菓子工房　ふじわら\n\t- 18:30まで\n- 帰宅\n\t- 茶屋町駅まで送ってもらった\n\t- 21時頃五日市着\n\n## 2022/5/5\n- カラオケ　10:30～12:00\n- 買い物　マックスバリュ\n- 昼食\n- カットと白髪染め　15:00-17:00\n\n\n\n\n",
+      "headings": [
+        "2022/4/30",
+        "2022/5/1",
+        "2022/5/2",
+        "2022/5/3",
+        "2022/5/4",
+        "2022/5/5"
+      ],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-05-06T10:35:12+09:00"
+    },
+    {
+      "id": "notes/001_ToDo/2022夏休み.md",
+      "title": "2022夏休み",
+      "path": "notes/001_ToDo/2022夏休み.md",
+      "body": "\n2022/8/12有休\n2022/8/13～2022/8/21\n\n- [x] 健康保険証マイナンバー登録\n- [x] おざま父方妹とその娘との会食　2022/8/12　宮島口コーラルホテル　\n- [ ] 家計簿をダッシュボード化\n- [ ] J-WESTカード退会\n- [ ] スマートEX登録\n- [x] フォトウエディング（2022/8/19）\n- [ ] nanacoをgooglePayに登録\n- [ ] JAF退会\n\n",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-08-21T11:02:16+09:00"
+    },
+    {
+      "id": "notes/001_ToDo/2022年末.md",
+      "title": "2022年末",
+      "path": "notes/001_ToDo/2022年末.md",
+      "body": "\n\n- [x] ふるさと納税\n- [x] LANケーブル購入 30m\n- [x] ボタン電池購入\n- [ ] スマートICOCA　クレジットカード変更\n- [ ] jwestカード解約\n- [ ] Pythonではじめる数理最適化\n- [ ] 株ソフト\n\n",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2023-01-03T15:11:45+09:00"
+    },
+    {
+      "id": "notes/001_ToDo/J-WESTカード退会.md",
+      "title": "J-WESTカード退会",
+      "path": "notes/001_ToDo/J-WESTカード退会.md",
+      "body": "\n2022/1/15\n\nMUFGカード\n\n\n- ICOCAクイックチャージ\n- エクスプレス予約\nしか使ってないため解約する\n\n- ICOCAクイックチャージ\n\t- →クレジットカード変えればOK？\n\t\t- クイックチャージ自体は使えなくなるかも\n\t\t- 普通のチャージになる？\n- エクスプレス予約\n\t- →スマートEXにする\n\n",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-07-31T17:27:56+09:00"
+    },
+    {
+      "id": "notes/001_ToDo/いろいろ.md",
+      "title": "いろいろ",
+      "path": "notes/001_ToDo/いろいろ.md",
+      "body": "- [x]  駐車場解約（2021/12/15）\n\t- 12月は65000払う\n\t- 1月からは52000払う\n- [ ]  車メンテナンスパック解約\n\t- [x] ディーラーに電話（2021/12/15）\n\t- [ ] ディーラーから書類郵送\n\t- [ ] 書類返送\n- [ ] 新居の間取り図作成\n- [ ] ネット業者選ぶ\n- [ ] \n\n\nbiglobe光に図面依頼 業者がいつ決まるか\n\nエレベーター 停止日確認\n\n\n\nスマホとプラン決める\n\n結婚後の口座決める\n   システム全体像の検討\n",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-01-09T18:14:13+09:00"
+    },
+    {
+      "id": "notes/001_ToDo/ふるさと納税_2022.md",
+      "title": "↓old",
+      "path": "notes/001_ToDo/ふるさと納税_2022.md",
+      "body": "\n## 寄付額計算\nhttps://www.satofull.jp/static/calculation01.php\n![](../../attachments/Pasted%20image%2020221225190008.png)\n\n\n新潟県南魚沼市：「自治体マイページ」を利用\n楽天は注文番号が寄付番号\n注文番号：寄付番号：384555-20221225-0559925803\n目安として寄付後1〜3日ほど経って記載の寄付番号をご利用ください。\n\n![](../../attachments/Pasted%20image%2020221228084857.png)\n\n# ↓old\n\n\n## 確定\nMOTTERU PD65WAC充電器 　MOT-ACPD65WU1　13,000円　定価：4,480\nhttps://item.rakuten.co.jp/f142158-ebina/36-0078/\n\nMOTTERU(モッテル) 国内最小最軽量 モバイルバッテリー PD18W　12,000円 定価：3,990\nhttps://item.rakuten.co.jp/f142158-ebina/36-0003/\n\n\n## 候補\n\nロジテック SSD　250GB 　25,000円\nhttps://item.rakuten.co.jp/f202096-ina/lmd-spb025u3cwh/?s-id=furusato_pc_mypage_search_item\n\nホットマット 400×400　HCM-40S-T ブラウン　12000\nhttps://item.rakuten.co.jp/f043214-ogawara/52320485/\n\n",
+      "headings": [
+        "寄付額計算",
+        "↓old",
+        "確定",
+        "候補"
+      ],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [
+        {
+          "label": "Pasted%20image%2020221225190008.png",
+          "resolved": "../../attachments/Pasted%20image%2020221225190008.png",
+          "type": "image"
+        },
+        {
+          "label": "Pasted%20image%2020221228084857.png",
+          "resolved": "../../attachments/Pasted%20image%2020221228084857.png",
+          "type": "image"
+        }
+      ],
+      "mtime": "2023-12-09T13:48:34+09:00"
+    },
+    {
+      "id": "notes/001_ToDo/やりたいこと.md",
+      "title": "やりたいこと",
+      "path": "notes/001_ToDo/やりたいこと.md",
+      "body": "\n## 2022/10/22\n\n- [ ] 現代制御工学の勉強\n- [ ] Flaskでwebアプリ開発　ダッシュボード　panel 　folium\n\t- https://qiita.com/8_hisakichi_8/items/717b0c78c00a9de9bd5a\n\t- https://qiita.com/8_hisakichi_8/items/dc40bc6956a35c99afee\n- [ ] ラズベリーパイ購入\n\n\n\n\n## old\n- [ ] ネットワーク勉強\n- [ ] 古いPCをサーバーにしてファイル共有する\n- [ ] Docker\n\t- https://note.com/junkawashima/n/n22a29d812041?magazine_key=m48033a253262\n- [ ] Git\n- [ ] メモやフォルダの管理の俯瞰図\n- [ ] ふるさと納税\n- [ ] Dockerをデスクトップに入れる\n",
+      "headings": [
+        "2022/10/22",
+        "old"
+      ],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-12-11T11:49:32+09:00"
+    },
+    {
+      "id": "notes/001_ToDo/やること.md",
+      "title": "やること",
+      "path": "notes/001_ToDo/やること.md",
+      "body": "\n## ToDo\n- [x] JP BANKカード解約（2022/10/7）\n\n\n\n\n## Done\n- [x] サカイアンケート\n- [ ] じぶん銀行 お金移す\n- [x] リモートデスクトップ接続\n- [x] 電気解約\n- [x] ガス解約 \n- [x] 水道解約\n- [x] ntt解約\n- [x] ocn解約\n- [x] ガス電話\n- [ ] ahamoへmnp\n- [x] 住所変更\n- [x] 免許 住所 本籍変更\n- [x] BIGLOBE支払い設定\n- [ ] 住所変更\n    - [x] Amazon\n    - [x] 楽天\n    - [x] ニトリ\n    - [x] nifmo\n    - [x] iijmio\n    - [x] auじぶん銀行\n    - [x] biglobe\n    - [x] オリコ\n    - [x] 住信SBI\n    - [x] エポスカード\n    - [x] j-westカード\n    - [ ] JPバンクカード\n    - [x] 三菱東京UFJ\n    - [ ] JAバンク　202234087616 書留が来るはず\n    - [x] 常陽銀行\n    - [ ] 三井住友カード（会社で自動に変わっている？）\n    - [x] サイマ\n    - [x] オリックス保険\n    - [x] 火災保険のやつ→電話\n    - [ ] SBI証券→ゆうそうされるはず\n",
+      "headings": [
+        "ToDo",
+        "Done"
+      ],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-10-07T13:35:05+09:00"
+    },
+    {
+      "id": "notes/001_ToDo/出張持ち物.md",
+      "title": "出張持ち物",
+      "path": "notes/001_ToDo/出張持ち物.md",
+      "body": "\n\n## 当日\n- [x] 歯ブラシ\n- [x] 歯磨き粉\n- [x] 体温計\n\n- [x] スマホ\n- [x] 財布\n- [x] 鍵\n\n## 前日まで\n\n\n- [ ] スマホ\n- [x] スマホ充電器\n- [ ] 財布\n- [ ] 鍵\n- [x] イヤホン\n\n\n- [x] PC\n- [x] PC電源\n- [x] HDMI変換\n- [x] マイク\n- [x] USBハブ\n- [x] マウス\n- [x] ノート\n- [x] 筆記具\n- [x] 会社携帯\n- [x] 眼鏡\n- [ ] LANケーブル\n\n- [x] 爪切り\n- [x] 体温計\n- [x] ハサミ\n- [ ] サプリ\n- [ ] マスク\n- [x] 歯ブラシ\n- [x] 歯磨き粉\n- [x] 歯間ブラシ\n- [ ] 化粧水\n- [x] シェーバー\n- [ ] 下着\n- [ ] 靴下\n- [ ] 上着\n- [x] 傘\n- [ ] 虫よけ\n- [x] 日焼け止め\n- [ ] かゆみ止め\n- [ ] アミノ酸\n- [ ] ハンドクリーム\n- [ ] 現金\n\n\n\n\n\n\n",
+      "headings": [
+        "当日",
+        "前日まで"
+      ],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2023-02-12T20:31:49+09:00"
+    },
+    {
+      "id": "notes/001_ToDo/出社時持ち物.md",
+      "title": "出社時持ち物",
+      "path": "notes/001_ToDo/出社時持ち物.md",
+      "body": "\n\n- [ ] 社員証\n- [ ] 財布\n- [ ] 鍵\n- [ ] スマホ\n- [ ] 会社携帯\n- [ ] ノート\n- [ ] イヤホン\n- [ ] ハンカチ\n- [ ] マスク\n- [ ] ガム\n- [ ] 飴\n- [ ] 目薬\n- [ ] 傘\n- [ ] 時計",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-11-09T06:58:12+09:00"
+    },
+    {
+      "id": "notes/001_ToDo/旅行持ち物.md",
+      "title": "旅行持ち物",
+      "path": "notes/001_ToDo/旅行持ち物.md",
+      "body": "\n### 基本\n\n- [ ] スマホ\n- [ ] 鍵\n- [ ] 財布\n\t- [ ] クレカ\n\t- [ ] キャッシュカード\n\t- [ ] 現金\n\t- [ ] ICOCA\n- [x] デジカメ\n- [ ] デジカメ充電器\n- [ ] スマホ充電器\n- [x] シェーバー\n- [x] シェーバー充電器\n- [ ] ハンドクリーム\n- [ ] 化粧水\n- [ ] 乳液\n- [x] 日焼け止め\n- [x] マスク\n\n- [x] 帽子\n- [x] 折り畳み傘\n\nのど飴 飛行機の耳痛防止\n\n\n- [ ] 下着　日数分\n- [ ] ハンカチ　日数分\n- [ ] 靴下　日数分\n- [ ] ボトムス　日数/3\n- [ ] トップス　日数/3\n\n\n### 防寒具\n- [ ] 手袋\n- [ ] マフラー\n- [ ] ウルトラライトダウン\n\n\n\n### 冠婚葬祭ありの場合\n- [ ] スーツ\n- [ ] シャツ\n- [ ] シャツ腕\n- [ ] スーツ下着\n- [ ] ジェル\n- [ ] ネクタイ\n- [ ] 靴\n- [ ] \n\n[スーツたたみ方](../obsidian://open?vault=ObsidianStorage&file=note%2F%E6%9C%AA%E5%88%86%E9%A1%9E%2F%E3%82%B9%E3%83%BC%E3%83%84%E3%81%9F%E3%81%9F%E3%81%BF%E6%96%B9)",
+      "headings": [
+        "基本",
+        "防寒具",
+        "冠婚葬祭ありの場合"
+      ],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [
+        {
+          "label": "スーツたたみ方",
+          "resolved": "../obsidian://open?vault=ObsidianStorage&file=note%2F%E6%9C%AA%E5%88%86%E9%A1%9E%2F%E3%82%B9%E3%83%BC%E3%83%84%E3%81%9F%E3%81%9F%E3%81%BF%E6%96%B9",
+          "type": "file"
+        }
+      ],
+      "mtime": "2022-11-26T19:04:56+09:00"
+    },
+    {
+      "id": "notes/001_ToDo/買いたいもの.md",
+      "title": "買いたいもの",
+      "path": "notes/001_ToDo/買いたいもの.md",
+      "body": "\n## 礼服\nhttps://www.aoki-style.com/staffSnap/detail/?cid=10664926\n\n\n\n\n## 水筒 2021/10/24\nhttps://www.amazon.co.jp/%E3%82%B5%E3%83%BC%E3%83%A2%E3%82%B9-%E7%9C%9F%E7%A9%BA%E6%96%AD%E7%86%B1%E3%82%B1%E3%83%BC%E3%82%BF%E3%82%A4%E3%83%9E%E3%82%B0-%E3%83%AF%E3%83%B3%E3%82%BF%E3%83%83%E3%83%81%E3%82%AA%E3%83%BC%E3%83%97%E3%83%B3%E3%82%BF%E3%82%A4%E3%83%97-JNR-751-KKI/dp/B07VFLFYD1/ref=sr_1_10?dchild=1&keywords=%E6%B0%B4%E7%AD%92+1%E3%83%AA%E3%83%83%E3%83%88%E3%83%AB&qid=1635049855&sr=8-10\n\nドルツ\nEW-DP54-A\nEW-DA44-H\n\n扇風機\nHEF-DL300C\n\n- コンセントにACアダプタがついてないこと\n- DCモーター\n- 無駄なLEDがないこと（夜中に照らすような）\n- 首振りで異音がないこと\n\nポータブル電源\nJackery ポータブル電源 240 大容量67200mAh/240Wh\nhttps://www.amazon.co.jp/Jackery-%E3%83%9D%E3%83%BC%E3%82%BF%E3%83%96%E3%83%AB%E9%9B%BB%E6%BA%90-240-%E5%A4%A7%E5%AE%B9%E9%87%8F66000mAh-%E5%AE%B6%E5%BA%AD%E3%83%BB%E3%82%A2%E3%82%A6%E3%83%88%E3%83%89%E3%82%A2%E4%B8%A1%E7%94%A8%E8%93%84%E9%9B%BB%E6%B1%A0/dp/B07PJYY115/ref=sr_1_8?__mk_ja_JP=%E3%82%AB%E3%82%BF%E3%82%AB%E3%83%8A&dchild=1&keywords=%E3%83%9D%E3%83%BC%E3%82%BF%E3%83%96%E3%83%AB%E9%9B%BB%E6%BA%90&qid=1624606297&sr=8-8\n\n\n- HDMIセレクタ\n\t- 3入力1出力\n\t- 60Hz対応\n\t- 電源供給可能\n\t- HDMI2.0\n\t- 手動切り替え（自動は多分うざい）\n\t- https://www.yodobashi.com/product/100000001005258122/",
+      "headings": [
+        "礼服",
+        "水筒 2021/10/24"
+      ],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-04-16T13:06:53+09:00"
+    },
+    {
+      "id": "notes/001_ToDo/車 乗るとき 運転.md",
+      "title": "車 乗るとき 運転",
+      "path": "notes/001_ToDo/車 乗るとき 運転.md",
+      "body": "免許証\nJAF\nETC\nメガネ\n\nカメラ\n帽子\n\n保険証\n自賠責保険\n車検\n\nドラレコ",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-11-05T17:06:25+09:00"
+    },
+    {
+      "id": "notes/001_ライフログ/なんかメモ.md",
+      "title": "なんかメモ",
+      "path": "notes/001_ライフログ/なんかメモ.md",
+      "body": "2021/6/9\n\n人生飽きた\n平日仕事してご飯食べて風呂入って寝るだけ\n休日掃除して買い物して洗濯して・・・\nの繰り返し\n\n急にどうでも良くなってきた　今月くらいから思い始めた\nこれから30年？40年？50年？を何のために過ごすのか　過ごす意味はあるのか？\n結婚とか　ましてや子供とか考えられない\n\n\n人生は壮大な暇つぶし　誰の言葉？　本質は何だろうか\n\n\n\nhttps://ttj-01.com/archives/1848/2\nマインドブレイク\n\n\n",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2021-06-09T22:53:23+09:00"
+    },
+    {
+      "id": "notes/001_ライフログ/カット履歴.md",
+      "title": "カット履歴",
+      "path": "notes/001_ライフログ/カット履歴.md",
+      "body": "#OneNoteにコピー済み \n\n- 2022/2/11\n- 2022/1/3？\n- 2022/12/3\n\t- バリカンのみでカット\n- 2022/10/29?\n- 2022/9/17\n- 2022/7/30 五日市ant\n- 2023/6/17\n\n\n\n### old\n\n- 2021/3/5　lodge art\n- 2021/5/8\n- 2021/5/15\n- 2021/5/30\n- 2021/6/12\n\t- 横と後ろ12mm トップとサイドは指3本ちょっと\n- 2021/7/2\n\t- 横と後ろ12mm トップとサイドは指3本\n- 2021/7/23\n- 2021/8/6\n\t- 後ろとサイド9mm 　ハサミでカット\n\thttps://www.youtube.com/watch?v=NohSwzmx42k\t\n- 2021/8/27\n\t- 前回と同じ\n- 2021/9/17\n\t- 前回と同じ感じ\n\t- ただし、トップの長さはほとんど切らず、すいただけ\n\t- サイドは刈り上げ\n- 2021/10/8\n- 2021/10/30\n\t- 前回と同じ感じ\n\t- ただし、トップの長さはほとんど切らず、すいただけ\n\t- サイドは刈り上げ　12mm\n- 2021/11/12\n- 2021/12/24\n\n\n次回予定：2022/10/29\n",
+      "headings": [
+        "old"
+      ],
+      "tags": [
+        "OneNoteにコピ"
+      ],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2023-10-22T13:57:37+09:00"
+    },
+    {
+      "id": "notes/001_ライフログ/サブスク.md",
+      "title": "サブスク",
+      "path": "notes/001_ライフログ/サブスク.md",
+      "body": "\n\n\n\n■ Office365\n2021/8/1",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2021-08-01T13:19:01+09:00"
+    },
+    {
+      "id": "notes/001_ライフログ/ワクチン.md",
+      "title": "ワクチン",
+      "path": "notes/001_ライフログ/ワクチン.md",
+      "body": "2021/08/02 \n15時30頃摂取 左腕\n\n2021/08/02 20:41\n肩より上に上げようとすると少し痛い\n\n\n20210830 2回目 15 35分\n\n夕食後19時半くらいにバファリンプレミアム\n2021/08/31 07:27\n朝食後バファリンプレミアム\nシャワー入った\nシャワー前 バファリン前は若干発熱の感じ 悪寒まではいかないが皮膚の感覚が変なやつ があったがその後は消えている 8時 37.6度 辛くない\n\n11時30 仕事おわり 38度超えて悪寒がしたため\nコンビニ弁当　食べてバファリンプレミアム　12:30　38.5\nそのあと映画つけて寝た\n13:30 熱は下がってないが、おかんがなくなった　38.5\n\n17時30 バナナとゼリー バファリンプレミアム 38.8度 頭痛 悪寒\n\n2021/09/01 00:56 バファリンプレミアム 頭痛 38.5度\n\n2021/09/01 02:26 うどん食べた 37.2\n\n2021/09/01 10:03\n肩が少し赤く腫れている 触ると違和感 少しあつい\n特別痛くはない 1回目の方が痛かった腕が上がらなかった\n\n15時 くらいには熱は治まった 肩はまだ腫れている 赤くて熱をもっている 注射したところより少し下\n\n9月4日\n腕がちょっと赤い\n\n\n## コロナワクチン3回目\n2022/4/14\n16:20 注射\n18:45 帰宅\n終業\n\n19:00 特に何ともない\n22:11 腕が少し痛い\n就寝\n\n\n2022/4/15\n7:00 起床　頭痛　腕痛　36.9\n朝食　バナナとヨーグルト\n7:20 バファリンプレミアム服用\n\n8:45 頭痛収まった\n\n12:00 頭痛\n12:20　昼食　うどん　みかん\n食後　バファリンプレミアム服用\n\nアイス食べた\n\n\n16:00-17:00 睡眠\n起きたら頭痛\n\n17:45　風呂\n18:15　ごはん　ウインナー　ゆで卵\n\n19:40 おなかを壊す\nバファリンプレミアム服用\n\n\n21時 急に震えが止まらなくなる\n例えではなく全身震える\n熱が40度超えた\n \n とりあえず水飲んだ\n \n 21時20分\n 震えなど収まって少し動けるためセブンにポカリ買いに行った\n OSONEはなかった\n 若干痺れが出た\n \n 21時40分\n 39.5度 意外と動ける\n\n震えは40度なのか水分不足なのか不明\n\n23時以降\n水分を一気にとりすぎたせいか、小便が断続的に出るようになってしまった\n1時間以上はトイレとベッドを往復した\n\n2022/4/16\n\n9時くらい 朝食 いつもの平日のご飯\nご飯 鮭フレーク 味噌汁\n\n16時　朝から頭痛があったためバファリンプレミアム服用\n\n22:00 熱なし\n\n2022/4/17\n\n8:00 起床\n頭痛あり　熱はなし\n\n腕だけでなく、わきの下が少し痛い\n\n昼くらいに頭痛消えた\n\n",
+      "headings": [
+        "コロナワクチン3回目"
+      ],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-04-17T14:29:41+09:00"
+    },
+    {
+      "id": "notes/001_ライフログ/不法駐輪車された場合.md",
+      "title": "不法駐輪車された場合",
+      "path": "notes/001_ライフログ/不法駐輪車された場合.md",
+      "body": "隣のセンチュリー曙2 の15に止める \nまんえい不動産に連絡\n\n警察は 広島東警察署に相談 二葉の里\n",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2021-06-12T11:56:50+09:00"
+    },
+    {
+      "id": "notes/001_ライフログ/会社.md",
+      "title": "問題点",
+      "path": "notes/001_ライフログ/会社.md",
+      "body": "\n# 問題点\n- 幹部に向けたクルマづくりをしている\n\t- 技術的な難易度（＝製品となった時のお客様の安全が担保できるか？）ではなく、幹部が入れたい機能か？が重要\n\n\n# やるべきこと\n- 言われたこと（方針）はRedmineに書いておく\n\t- 言われたように進めたら別の意見で責められる\n",
+      "headings": [
+        "問題点",
+        "やるべきこと"
+      ],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2021-05-29T10:52:41+09:00"
+    },
+    {
+      "id": "notes/001_ライフログ/天気と服装.md",
+      "title": "天気と服装",
+      "path": "notes/001_ライフログ/天気と服装.md",
+      "body": "#OneNoteにコピー済み\n\n## 2022/10/19\n出勤　6:54電車\nエアリズム+長袖シャツ＋感動パンツ＋ブロックテックパーカー灰色　で通勤時肌寒かった\n![](../../attachments/Pasted%20image%2020221019212446.png)\n\n\n\n\n\n\n",
+      "headings": [
+        "2022/10/19"
+      ],
+      "tags": [
+        "OneNoteにコピ"
+      ],
+      "links_to_notes": [],
+      "attachments": [
+        {
+          "label": "Pasted%20image%2020221019212446.png",
+          "resolved": "../../attachments/Pasted%20image%2020221019212446.png",
+          "type": "image"
+        }
+      ],
+      "mtime": "2023-10-22T13:54:11+09:00"
+    },
+    {
+      "id": "notes/001_ライフログ/検温記録.md",
+      "title": "検温記録",
+      "path": "notes/001_ライフログ/検温記録.md",
+      "body": "https://qr.paypay.ne.jp/UcBAHQA6Y0TjQ7cO\n[検温記録.xlsx](../E:/Dropbox/600_environment/400_生活/100_ライフログ/検温記録.xlsx)\n[検温記録.xlsx](../Z:/Dropbox/600_environment/400_生活/100_ライフログ/検温記録.xlsx)\n\n\n![](../../attachments/Pasted%20image%2020221016180806.png)\n\n20221111 10 12 36.3\n20221115 11 29 36.3\n20221116 8 00 36.2\n20221117 9 00 36.3\n",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [
+        {
+          "label": "Pasted%20image%2020221016180806.png",
+          "resolved": "../../attachments/Pasted%20image%2020221016180806.png",
+          "type": "image"
+        },
+        {
+          "label": "検温記録.xlsx",
+          "resolved": "../E:/Dropbox/600_environment/400_生活/100_ライフログ/検温記録.xlsx",
+          "type": "file"
+        },
+        {
+          "label": "検温記録.xlsx",
+          "resolved": "../Z:/Dropbox/600_environment/400_生活/100_ライフログ/検温記録.xlsx",
+          "type": "file"
+        }
+      ],
+      "mtime": "2022-11-17T09:00:02+09:00"
+    },
+    {
+      "id": "notes/001_ライフログ/消耗品交換.md",
+      "title": "消耗品交換",
+      "path": "notes/001_ライフログ/消耗品交換.md",
+      "body": "\n食器用スポンジ\n2020/5/31\n2020/8/11\n2021/1/24\n2021/5/22\n\n■身体タオル\n2020/1/14\n2020/8/21\n\n■洗顔ネット\n2020/8/21\n\n\n■歯ブラシ\n2020/7/6\n2021/5/23\n2021/8/15\n\n■ワンタフトブラシ\n2021/8/15\n\n",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2021-08-15T22:08:01+09:00"
+    },
+    {
+      "id": "notes/001_ライフログ/物品購入交換履歴.md",
+      "title": "物品購入交換履歴",
+      "path": "notes/001_ライフログ/物品購入交換履歴.md",
+      "body": "■靴\n2020/12/27　asicsランウォーク メンズ 3E G-TX 25.0　黒　天然革　ゴム底　ゴアテックス　25000円くらい（29,700の15%OFF）\n\n■椅子\n2013/4/28 バウヒュッテ CP-04-BK\n2017/7/23 タンスのゲン\n2020/9/20 イトーキ サリダ YL8-BL-AEL アジャスタブル肘付 ブラック\n\n■ルーター\n2015/9/13 BUFFALO エアステーション　WHR-1166DHP2/N\n\n■スマホ\n2016/12/28 ASUS ZenPhone3 \n2019/12くらい？　AQUOS sense3\n\n■コーヒーメーカー\n2012/9/30 象印　EC-KS50-TB ダークブラウン\n\n■コーヒーミル\n2013/10/22 TIGER ミル シルバー SKR-M070-SF\n\n■ モニタ\n2013/12/16 iiyama 23型　21602円　2枚　\n\n■シーリングライト\n2014/9/19 Panasonic HH-LC564A\n\n■ガスコンロ\n2014/9/27 リンナイ　RT64JH7S-CL ホース：0.5m\n\n■衣類乾燥除湿器\n2019/7/23 コロナ　CD-S6319\n\n■ 扇風機\n2021/7/31 siroca\n\n■ 電動歯ブラシ\n2021/8/15 ドルツ \n\n■ ノートPC\n2021/10/8 Lenovo P14s \n\t7N7U8FRU8GUUN111\n\n\n■その他\n2020/8/7 まな板 ベストコ ネオフラム 抗菌カッティングボード M マーブル \n\n2020/8/7 まな板 ベストコ ネオフラム 抗菌カッティングボード M マーブル \n\n2020/8/8 フライパン　北陸アルミ　マイスタープレミアム26cm　\n\n2020/8/8 卵焼きフライパン　北陸アルミ　マイスタープレミアム　\n\n2020/8/10 ボディバッグ　ブラウン　TAKEO KICUCHI \n\n2020/8/15 掃除機 三菱電機 tc-fxh8p\n2020/8/15 キーケース ポーター \n\n2020/10/3 風呂マット ニトリ\n2021/7/31 風呂マット ニトリ\n\n2021/7/31 帽子　黒キャップ　North Face\n\n2021/7/31 接触冷感マット　ニトリ\n\n\n2020/10/23 LANケーブル　CAT6a",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2021-10-10T15:50:15+09:00"
+    },
+    {
+      "id": "notes/100_PC/20210627_HDD交換.md",
+      "title": "20210627_HDD交換",
+      "path": "notes/100_PC/20210627_HDD交換.md",
+      "body": "\n## 簡潔に\n- HDDのフォーマットは\n\t- Windowsボタン右クリック→「ディスクの管理」\n\t- 該当HDDを右クリック→「ボリューム削除」\n\t- 右クリック→「新しいシンプルボリュームの作成」\n\t- NTFSフォーマット\n\n## 詳細\n\nPC起動時に　1TB Seagate HDDにチェックディスクが実行された\n起動後、CrystalDiskInfoで「注意」となったので交換することにした\n\n手持ちのHDD　500GB Seagate　があったのでこれを使用\n元々Ubuntu入れてたやつ\n\nまずはHDDを外す前にDropboxをログアウトしておく\n\n\nそのまま接続してもドライブとして認識しなかった\nコントロールパネルからいろいろたどって「ディスク管理」へ\n該当のHDDは直接フォーマットできない（右クリックで出てこない）\nまずは「ボリュームの削除」を行う\nその後、「新しいスパンボリューム」（？）でフォーマット\n- フォーマットは「NTFS」でよい\n\t- これだとMacで書き込みできないが、Windowsではこれが高機能で良い\n\t- exFatにすればMacでも使えるが、機能はよろしくない\n\t- Fatは論外　ファイルサイズ4GBまでしか使えない\n\t- クイックフォーマットで良い\n\t- フォーマットしたら中身のデータは消えるので注意\n- ここまで出来たら、Dropboxで同期させる\n\n",
+      "headings": [
+        "簡潔に",
+        "詳細"
+      ],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-03-05T15:06:56+09:00"
+    },
+    {
+      "id": "notes/100_PC/PCユーザー名.md",
+      "title": "PCユーザー名",
+      "path": "notes/100_PC/PCユーザー名.md",
+      "body": "\n\n自作デスクトップ：ringo\nLenovoノートPC P14s：banana\nHPノートPC：orange\nLavie Ll750MG：xubuntu：kiwi\n",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-05-01T15:12:00+09:00"
+    },
+    {
+      "id": "notes/100_PC/モニタ環境.md",
+      "title": "モニタ環境",
+      "path": "notes/100_PC/モニタ環境.md",
+      "body": "20220708_モニタ環境.pptx\n\n![](../../attachments/Pasted%20image%2020220708192015.png)\n",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [
+        {
+          "label": "Pasted%20image%2020220708192015.png",
+          "resolved": "../../attachments/Pasted%20image%2020220708192015.png",
+          "type": "image"
+        }
+      ],
+      "mtime": "2022-07-08T19:20:18+09:00"
+    },
+    {
+      "id": "notes/100_PC/ルーター.md",
+      "title": "ルーター",
+      "path": "notes/100_PC/ルーター.md",
+      "body": "\n\n- Buffaloルーターを中継器として設定\n\t- WHR-1166DHP2/N\n\t\t- admin password\n\t- https://www.youtube.com/watch?v=h8DE6xRqWnM&ab_channel=BUFFALOINC.customersupport\n\t- 注意：PCと親機をLANケーブルでつなぐが、Airstationで設定するのは中継器のほう\n\t- SSIDは元の値に戻した（Keyは戻してない）",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-02-18T15:18:18+09:00"
+    },
+    {
+      "id": "notes/100_スマホ/20220903_スマホ.md",
+      "title": "20220903_スマホ",
+      "path": "notes/100_スマホ/20220903_スマホ.md",
+      "body": "\n2022/9/7 終業後にビックカメラで買う予定\n\n\n- Moto g52j 5G\n- 手帳型ケース\n\t- おサイフケータイ使用可能\n\t- ストラップ取り付け可能\n- リング\n- 保護フィルム　PETフィルムにする　\n\t- アンチグレア\n\t- 指紋防止\n\t- 気泡入りにくい\n\t- 縁はいらない　浮くから\n\n![](../../attachments/Pasted%20image%2020220907230944.png)",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [
+        {
+          "label": "Pasted%20image%2020220907230944.png",
+          "resolved": "../../attachments/Pasted%20image%2020220907230944.png",
+          "type": "image"
+        }
+      ],
+      "mtime": "2022-09-07T23:09:47+09:00"
+    },
+    {
+      "id": "notes/100_スマホ/20220912_motoセットアップ.md",
+      "title": "20220912_motoセットアップ",
+      "path": "notes/100_スマホ/20220912_motoセットアップ.md",
+      "body": "Motorola製品の向上に役立てる　NG\n\n\n- [x] APN設定\n- [x] LINE引継ぎ\n- [x] PayPayログイン\n- [x] 楽天Payログイン\n- [x] マネーフォーワードログイン\n- [x] Google2段階認証　引継ぎ\n- [x] auじぶん銀行　ログイン\n- [ ] Microsoft Authenticator 引継ぎ\n- [x] 楽天銀行\n",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-09-14T21:24:51+09:00"
+    },
+    {
+      "id": "notes/20211113_縮景園_ざま家.md",
+      "title": "20211113_縮景園_ざま家",
+      "path": "notes/20211113_縮景園_ざま家.md",
+      "body": "\n\n\n\n\n",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2021-11-13T16:35:32+09:00"
+    },
+    {
+      "id": "notes/20220129ガス.md",
+      "title": "20220129ガス",
+      "path": "notes/20220129ガス.md",
+      "body": "",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-01-29T11:25:14+09:00"
+    },
+    {
+      "id": "notes/Bokehでグラフ描画.md",
+      "title": "サンプルデータの準備",
+      "path": "notes/Bokehでグラフ描画.md",
+      "body": "#python #bokeh \n\n\n![](../attachments/linked_plots.html)\n\n\n```python\nfrom bokeh.plotting import figure, output_file, show\nfrom bokeh.layouts import gridplot\nfrom bokeh.models import Range1d\n\n# サンプルデータの準備\ndates = [\"2021-01-01\", \"2021-01-02\", \"2021-01-03\", \"2021-01-04\"]\nvalues1 = [10, 15, 13, 17]\nvalues2 = [20, 25, 23, 22]\n\n# 共有されるx軸の範囲オブジェクトを作成\nx_range = Range1d(start=0, end=len(dates)-1)  # インデックスに基づく範囲設定\n\n# 1つ目のグラフ\np1 = figure(title=\"グラフ1\", x_range=x_range, plot_width=400, plot_height=400)\np1.line(range(len(dates)), values1, color=\"blue\", alpha=0.5)\np1.circle(range(len(dates)), values1, size=8, color=\"blue\", alpha=0.5)\np1.xaxis.major_label_overrides = {i: date for i, date in enumerate(dates)}\n\n# 2つ目のグラフ\np2 = figure(title=\"グラフ2\", x_range=x_range, plot_width=400, plot_height=400)  # x_rangeを共有\np2.line(range(len(dates)), values2, color=\"green\", alpha=0.5)\np2.circle(range(len(dates)), values2, size=8, color=\"green\", alpha=0.5)\np2.xaxis.major_label_overrides = {i: date for i, date in enumerate(dates)}\n\n# グリッドレイアウトでプロットを配置\ngrid = gridplot([[p1], [p2]])\n\n# 出力ファイルを設定\noutput_file(\"linked_plots.html\")\n\n# 表示\nshow(grid)\n```\n\n",
+      "headings": [
+        "サンプルデータの準備",
+        "共有されるx軸の範囲オブジェクトを作成",
+        "1つ目のグラフ",
+        "2つ目のグラフ",
+        "グリッドレイアウトでプロットを配置",
+        "出力ファイルを設定",
+        "表示"
+      ],
+      "tags": [
+        "python",
+        "bokeh"
+      ],
+      "links_to_notes": [],
+      "attachments": [
+        {
+          "label": "linked_plots.html",
+          "resolved": "../attachments/linked_plots.html",
+          "type": "file"
+        }
+      ],
+      "mtime": "2024-05-02T10:15:22.756291+09:00"
+    },
+    {
+      "id": "notes/Bokehでグラフ描画2.md",
+      "title": "サンプルデータの準備",
+      "path": "notes/Bokehでグラフ描画2.md",
+      "body": "Bokehでグラフ描画\n\n```python\n\n#%%\n\nfrom bokeh.layouts import column\nfrom bokeh.models import DateRangeSlider, ColumnDataSource, CustomJS, HoverTool, CrosshairTool\nfrom bokeh.plotting import figure, output_file, show, save\nfrom bokeh.events import MouseMove\nimport pandas as pd\n\n# サンプルデータの準備\ndates = pd.date_range('2021-01-01', periods=10, freq='D')\nvalues1 = [i**2 for i in range(10)]\nvalues2 = [i*3 for i in range(10)]\nsource1 = ColumnDataSource(data=dict(date=dates, value=values1))\nsource2 = ColumnDataSource(data=dict(date=dates, value=values2))\n\n# 共有されるx軸範囲の設定\nx_range = figure(plot_width=800, plot_height=400, x_axis_type=\"datetime\").x_range\n\n# プロットの作成\np1 = figure(plot_width=800, plot_height=400, x_axis_type=\"datetime\", title=\"Plot 1 - Interactive Date Range\", x_range=x_range)\np1.line(x='date', y='value', source=source1)\np1.circle(x='date', y='value', source=source1, size=8)\n\np2 = figure(plot_width=800, plot_height=400, x_axis_type=\"datetime\", title=\"Plot 2 - Interactive Date Range\", x_range=x_range)\np2.line(x='date', y='value', source=source2)\np2.circle(x='date', y='value', source=source2, size=8)\n\n# クロスヘアツールの追加\ncrosshair = CrosshairTool()\np1.add_tools(crosshair)\np2.add_tools(crosshair)\n\n# デートレンジスライダーの作成\ndate_range_slider = DateRangeSlider(title=\"Adjust Date Range:\", start=dates.min(), end=dates.max(), value=(dates.min(), dates.max()), step=1)\n\n# MouseMoveイベントのJSコールバック\ncallback = CustomJS(args={'p1': p1, 'p2': p2, 'crosshair': crosshair}, code=\"\"\"\n    p2.xgrid[0].location = cb_obj['x'];  // cb_obj['x']はマウスのx座標\n    //p2.ygrid[0].location = cb_obj['y'];  // cb_obj['y']はマウスのy座標\n\"\"\")\np1.js_on_event(MouseMove, callback)\n\n# レイアウトの配置\nlayout = column(date_range_slider, p1, p2)\n\n# 出力ファイルを設定\noutput_file(\"linked_plots_with_crosshair.html\")\n\n# HTMLファイルに保存\nsave(layout)\n\n# ブラウザで表示\nshow(layout)\n\n```",
+      "headings": [
+        "サンプルデータの準備",
+        "共有されるx軸範囲の設定",
+        "プロットの作成",
+        "クロスヘアツールの追加",
+        "デートレンジスライダーの作成",
+        "MouseMoveイベントのJSコールバック",
+        "レイアウトの配置",
+        "出力ファイルを設定",
+        "HTMLファイルに保存",
+        "ブラウザで表示"
+      ],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2024-05-18T11:01:49.647236+09:00"
+    },
+    {
+      "id": "notes/Bokehでグラフ描画_スライダーバー.md",
+      "title": "サンプルデータの準備",
+      "path": "notes/Bokehでグラフ描画_スライダーバー.md",
+      "body": "#python #bokeh\n\n実データへの適用はできてない\n\n![](../attachments/date_range_slider_customjs.html)\n\n```python\nfrom bokeh.layouts import column\nfrom bokeh.models import DateRangeSlider, ColumnDataSource, CustomJS\nfrom bokeh.plotting import figure, output_file, save\nimport pandas as pd\n\n# サンプルデータの準備\ndates = pd.date_range('2021-01-01', periods=10, freq='D')\nvalues = [i**2 for i in range(10)]\nsource = ColumnDataSource(data=dict(date=dates, value=values))\n\n# プロットの作成\np = figure(plot_width=800, plot_height=400, x_axis_type=\"datetime\",\n           title=\"Date Range Slider with CustomJS\")\np.line(x='date', y='value', source=source)\n\n# デートレンジスライダーの作成\ndate_range_slider = DateRangeSlider(title=\"Adjust Date Range:\",\n                                    start=dates.min(), end=dates.max(),\n                                    value=(dates.min(), dates.max()),\n                                    step=1)\n\n# JavaScriptコールバックの設定\ncallback = CustomJS(args=dict(p=p, date_range_slider=date_range_slider), code=\"\"\"\n    // スライダーから日付範囲を取得\n    var range = date_range_slider.value;\n    var start = new Date(range[0]);\n    var end = new Date(range[1]);\n\n    // プロットのX軸範囲を更新\n    p.x_range.start = start.getTime();\n    p.x_range.end = end.getTime();\n\"\"\")\n\ndate_range_slider.js_on_change('value', callback)\n\n# レイアウトの配置\nlayout = column(date_range_slider, p)\n\n# 出力ファイルを設定\noutput_file(\"date_range_slider_customjs.html\")\n\n# HTMLファイルに保存\nsave(layout)\n```",
+      "headings": [
+        "サンプルデータの準備",
+        "プロットの作成",
+        "デートレンジスライダーの作成",
+        "JavaScriptコールバックの設定",
+        "レイアウトの配置",
+        "出力ファイルを設定",
+        "HTMLファイルに保存"
+      ],
+      "tags": [
+        "python",
+        "bokeh"
+      ],
+      "links_to_notes": [],
+      "attachments": [
+        {
+          "label": "date_range_slider_customjs.html",
+          "resolved": "../attachments/date_range_slider_customjs.html",
+          "type": "file"
+        }
+      ],
+      "mtime": "2024-05-02T10:15:28.043160+09:00"
+    },
+    {
+      "id": "notes/Electoron/インストール.md",
+      "title": "インストール",
+      "path": "notes/Electoron/インストール.md",
+      "body": "\n Node.jsのバージョン管理はNodistを使用する\n \n まずNodistをインストール\n https://www.granfairs.com/blog/staff/install-nodist\n\nNodistだと`npx`がないため個別にインストール\n```shell\nnpm install npx -g\n```\n\nhttps://qiita.com/TigRig/items/64d55b5fc5483b01c3b5\n\n作成アプリのフォルダへ移動する\n```shell\nnpm init -y\n```\n\nElectronをローカルインストールする\n```shell\nnpm install electron\n```\n\npackage.jsonの「index.js」を「main.js」に書き換える\n\nmain.js\n```java\n\"use strct\";\n\n// Electronのモジュール\nconst electron = require(\"electron\");\n\n// アプリケーションをコントロールするモジュール\nconst app = electron.app;\n\n// ウィンドウを作成するモジュール\nconst BrowserWindow = electron.BrowserWindow;\n\n// メインウィンドウはGCされないようにグローバル宣言\nlet mainWindow = null;\n\n// 全てのウィンドウが閉じたら終了\napp.on(\"window-all-closed\", () => {\n  if (process.platform != \"darwin\") {\n    app.quit();\n  }\n});\n\n\n// Electronの初期化完了後に実行\napp.on(\"ready\", () => {\n  //ウィンドウサイズを1280*720（フレームサイズを含まない）に設定する\n  mainWindow = new BrowserWindow({width: 1280, height: 720, useContentSize: true});\n  //使用するhtmlファイルを指定する\n  mainWindow.loadURL(`file://${__dirname}/index.html`);\n\n  // ウィンドウが閉じられたらアプリも終了\n  mainWindow.on(\"closed\", () => {\n    mainWindow = null;\n  });\n});\n\n```\n\nindex.html\n```html\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"UTF-8\">\n  <title>Sample</title>\n</head>\n<body>\n  <p>Hello World</p>\n</body>\n</html>\n```\n\nフォルダ構成はこうなるはず\n```\n.\n├── index.html\n├── main.js\n└── package.json\n```\n\n以下のコマンドで画面が出たら、インストールできている\n```shell\nnpx electron .\n```\n\n![](../attachments/Pasted%20image%2020211016210047.png)",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [
+        {
+          "label": "Pasted%20image%2020211016210047.png",
+          "resolved": "../attachments/Pasted%20image%2020211016210047.png",
+          "type": "image"
+        }
+      ],
+      "mtime": "2021-10-16T21:04:46+09:00"
+    },
+    {
+      "id": "notes/Top.md",
+      "title": "Top",
+      "path": "notes/Top.md",
+      "body": "\n- 以下に公開されている\nhttps://inzkyk.xyz/kalman_filter/\n\n- ローカルファイルは以下\n[Pythonで学ぶベイズフィルタとカルマンフィルタ](../Z:/Dropbox/300_project/Pythonで学ぶベイズフィルタとカルマンフィルタ)\n\n\n",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [
+        {
+          "label": "Pythonで学ぶベイズフィルタとカルマンフィルタ",
+          "resolved": "../Z:/Dropbox/300_project/Pythonで学ぶベイズフィルタとカルマンフィルタ",
+          "type": "file"
+        }
+      ],
+      "mtime": "2022-03-07T12:33:03+09:00"
+    },
+    {
+      "id": "notes/オブジェクト指向.md",
+      "title": "オブジェクト指向",
+      "path": "notes/オブジェクト指向.md",
+      "body": "\n\nhttps://qiita.com/rarafy/items/640907de6ea232abca4b#:~:text=%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88%E6%8C%87%E5%90%91%E3%81%A8%E3%81%AF%E3%80%81%E3%80%8C%E3%81%82%E3%82%8B,%E3%81%99%E3%82%8B%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E6%A7%8B%E6%88%90%E3%81%AE%E8%80%83%E3%81%88%E6%96%B9%E3%80%82\n\n・C＋＋、C＃、pythonなどがオブジェクト指向言語の代表とされている\n\nメリット\n",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2024-10-09T22:31:26.387470+09:00"
+    },
+    {
+      "id": "notes/フィルタリングの例：バネマスダンパ.md",
+      "title": "フィルタリングの例：バネマスダンパ",
+      "path": "notes/フィルタリングの例：バネマスダンパ.md",
+      "body": "例：バネマスダンパ\n\n![](../attachments/Pasted%20image%2020240421203943.png)\nここから状態空間表現を導出する\n状態変数は位置、速度\n![](../attachments/Pasted%20image%2020240421204031.png)\nここから\n![](../attachments/Pasted%20image%2020240421204125.png)\n![](../attachments/Pasted%20image%2020240421204046.png)\n\nここから以下のように表現できるため\n![](../attachments/Pasted%20image%2020240421204156.png)\n\n状態ベクトルは\n![](../attachments/Pasted%20image%2020240421204211.png)\nAとbを以下のように定義すると\n![](../attachments/Pasted%20image%2020240421204223.png)\n\n以下が状態方程式\n![](../attachments/Pasted%20image%2020240421204253.png)\n\n出力（観測方程式）は\n![](../attachments/Pasted%20image%2020240421204332.png)\nただし\n![](../attachments/Pasted%20image%2020240421204341.png)\n",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [
+        {
+          "label": "Pasted%20image%2020240421203943.png",
+          "resolved": "../attachments/Pasted%20image%2020240421203943.png",
+          "type": "image"
+        },
+        {
+          "label": "Pasted%20image%2020240421204031.png",
+          "resolved": "../attachments/Pasted%20image%2020240421204031.png",
+          "type": "image"
+        },
+        {
+          "label": "Pasted%20image%2020240421204125.png",
+          "resolved": "../attachments/Pasted%20image%2020240421204125.png",
+          "type": "image"
+        },
+        {
+          "label": "Pasted%20image%2020240421204046.png",
+          "resolved": "../attachments/Pasted%20image%2020240421204046.png",
+          "type": "image"
+        },
+        {
+          "label": "Pasted%20image%2020240421204156.png",
+          "resolved": "../attachments/Pasted%20image%2020240421204156.png",
+          "type": "image"
+        },
+        {
+          "label": "Pasted%20image%2020240421204211.png",
+          "resolved": "../attachments/Pasted%20image%2020240421204211.png",
+          "type": "image"
+        },
+        {
+          "label": "Pasted%20image%2020240421204223.png",
+          "resolved": "../attachments/Pasted%20image%2020240421204223.png",
+          "type": "image"
+        },
+        {
+          "label": "Pasted%20image%2020240421204253.png",
+          "resolved": "../attachments/Pasted%20image%2020240421204253.png",
+          "type": "image"
+        },
+        {
+          "label": "Pasted%20image%2020240421204332.png",
+          "resolved": "../attachments/Pasted%20image%2020240421204332.png",
+          "type": "image"
+        },
+        {
+          "label": "Pasted%20image%2020240421204341.png",
+          "resolved": "../attachments/Pasted%20image%2020240421204341.png",
+          "type": "image"
+        }
+      ],
+      "mtime": "2024-04-21T20:44:46.980048+09:00"
+    },
+    {
+      "id": "notes/マハラノビス距離.md",
+      "title": "マハラノビス距離",
+      "path": "notes/マハラノビス距離.md",
+      "body": "マハラノビス距離\n\nhttps://qiita.com/kotai2003/items/297930db4466b71f06b0\n\n![](../attachments/Pasted%20image%2020240317150135.png)\n![](../attachments/Pasted%20image%2020240317150207.png)\nマハラノビス距離のdは、下記の式のようにスカラーになることが分かる。\n![](../attachments/Pasted%20image%2020240317150119.png)",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [
+        {
+          "label": "Pasted%20image%2020240317150135.png",
+          "resolved": "../attachments/Pasted%20image%2020240317150135.png",
+          "type": "image"
+        },
+        {
+          "label": "Pasted%20image%2020240317150207.png",
+          "resolved": "../attachments/Pasted%20image%2020240317150207.png",
+          "type": "image"
+        },
+        {
+          "label": "Pasted%20image%2020240317150119.png",
+          "resolved": "../attachments/Pasted%20image%2020240317150119.png",
+          "type": "image"
+        }
+      ],
+      "mtime": "2024-03-17T15:02:26+09:00"
+    },
+    {
+      "id": "notes/ユニクロスーツ.md",
+      "title": "ユニクロスーツ",
+      "path": "notes/ユニクロスーツ.md",
+      "body": "\n\n冠婚葬祭OK\nストレッチウールジャケット  パンツ\n洗濯は\n\n\n\n感動ジャケット パンツ ウールライク\nこれは冠婚葬祭無理か？\n",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2021-11-10T14:40:58+09:00"
+    },
+    {
+      "id": "notes/ユークリッド距離.md",
+      "title": "ユークリッド距離",
+      "path": "notes/ユークリッド距離.md",
+      "body": "L2距離\n![](../attachments/Pasted%20image%2020240317113817.png)",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [
+        {
+          "label": "Pasted%20image%2020240317113817.png",
+          "resolved": "../attachments/Pasted%20image%2020240317113817.png",
+          "type": "image"
+        }
+      ],
+      "mtime": "2024-03-17T11:39:25+09:00"
+    },
+    {
+      "id": "notes/一時メモ.md",
+      "title": "一時メモ",
+      "path": "notes/一時メモ.md",
+      "body": "\n\nhttps://www.amazon.co.jp/gp/product/B08B3QSZML/ref=ppx_yo_dt_b_search_asin_title?ie=UTF8&th=1",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-06-19T08:40:54+09:00"
+    },
+    {
+      "id": "notes/仕事/会議メモ.md",
+      "title": "会議メモ",
+      "path": "notes/仕事/会議メモ.md",
+      "body": "# 会議メモ\n\n今日は案件Aの整理をした。\n\n## 論点\n- 検索アプリを作る\n- 添付画像も見たい\n- 共用PCでは OneDrive Web を使いたい\n- 左側の結果欄で概要も見たい\n\n関連ノート: <a href=\"#\" class=\"note-link\" data-note=\"notes/仕事/案件A.md\">案件A</a>\n\n画像:\n![sample-diagram.png](../attachments/sample-diagram.png)\n\nタグ: #会議 #重要\n",
+      "headings": [
+        "会議メモ",
+        "論点"
+      ],
+      "tags": [
+        "会議",
+        "重要"
+      ],
+      "links_to_notes": [
+        {
+          "label": "案件A",
+          "target": "notes/仕事/案件A.md"
+        }
+      ],
+      "attachments": [
+        {
+          "label": "sample-diagram.png",
+          "resolved": "../attachments/sample-diagram.png",
+          "type": "image"
+        }
+      ],
+      "mtime": "2026-04-05T14:39:36.599614+09:00"
+    },
+    {
+      "id": "notes/仕事/案件A.md",
+      "title": "案件A",
+      "path": "notes/仕事/案件A.md",
+      "body": "# 案件A\n\n検索アプリの仕様まとめ。\n\n- `body_raw` は持たない\n- `body` は検索用兼表示用\n- ノートリンクはアプリ内遷移にする\n- 添付は `attachments/` 直下に置く\n",
+      "headings": [
+        "案件A"
+      ],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2026-04-05T14:39:36.615294+09:00"
+    },
+    {
+      "id": "notes/課題案_課題解決活動.md",
+      "title": "課題案_課題解決活動",
+      "path": "notes/課題案_課題解決活動.md",
+      "body": "2024/4/7\n\n収益のがけ\n69とか７GLの成功が必須\n次世代品質問題がある\nこれまで新世代でやり方替えてきて品質問題爆発させてきた\n\n今後は品質問題抑えていかないと収益が保てず会社の存続に\nだが、69ではＴ社システム購入\n公開される情報が限定的\n仕様書購入するが、黒塗りだったり\n\nセンシング状況が見れるか不明\n誤作動はT者でも対策するだろう\nしかし、誤作動一歩手前のセンサの誤検知がわからない\nFusionしたときに変な挙動にならないかもわからない\n\n\nそのため、こちらでもCANとってFusionを作り検知状況を確認する\nFUしおｎやってた私しかできない\n\n\n\n\n\n",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2024-04-07T20:18:35.307659+09:00"
+    },
+    {
+      "id": "notes/論文ダウンロード.md",
+      "title": "論文ダウンロード",
+      "path": "notes/論文ダウンロード.md",
+      "body": "https://ja.m.wikipedia.org/wiki/Sci-Hub\n\nscihub",
+      "headings": [],
+      "tags": [],
+      "links_to_notes": [],
+      "attachments": [],
+      "mtime": "2022-12-19T19:02:14+09:00"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Obsidian Vault Search</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>Vault Search</h1>
+        <div id="meta" class="meta">search-index.json を読み込み中…</div>
+      </div>
+      <div class="search-box">
+        <input id="query" type="search" placeholder="タイトル・本文・タグを検索" autocomplete="off" />
+        <button id="clearBtn" type="button">クリア</button>
+      </div>
+      <div class="toolbar">
+        <label><input id="titleOnly" type="checkbox" /> タイトル優先表示</label>
+        <label>表示件数
+          <select id="limit">
+            <option>10</option><option selected>30</option><option>50</option><option>100</option>
+          </select>
+        </label>
+      </div>
+      <div id="resultsInfo" class="results-info"></div>
+      <div id="results" class="results"></div>
+    </aside>
+    <main class="main">
+      <div id="empty" class="empty">左側で検索すると、ここにノート本文が表示されます。</div>
+      <article id="viewer" class="viewer hidden">
+        <header class="viewer-header">
+          <h2 id="viewerTitle"></h2>
+          <div class="viewer-sub">
+            <span id="viewerPath"></span>
+            <span id="viewerMtime"></span>
+          </div>
+        </header>
+        <nav id="viewerTags" class="tags"></nav>
+        <section id="viewerBody" class="viewer-body"></section>
+        <section id="viewerAttachmentsWrap" class="attachments-wrap hidden">
+          <h3>添付</h3>
+          <ul id="viewerAttachments" class="attachments"></ul>
+        </section>
+      </article>
+    </main>
+  </div>
+  <script src="./app.js"></script>
+</body>
+</html>
