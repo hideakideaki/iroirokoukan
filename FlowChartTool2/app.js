@@ -184,6 +184,50 @@
     function boundsOfNode(n) {
       return { left: n.x - n.w / 2, right: n.x + n.w / 2, top: n.y - n.h / 2, bottom: n.y + n.h / 2, cx: n.x, cy: n.y };
     }
+    function expandBounds(bounds, paddingX, paddingY = paddingX) {
+      return {
+        left: bounds.left - paddingX,
+        right: bounds.right + paddingX,
+        top: bounds.top - paddingY,
+        bottom: bounds.bottom + paddingY,
+      };
+    }
+    function boundsIntersect(a, b) {
+      return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    }
+    function collectDescendantIds(rootId, acc = new Set()) {
+      if (acc.has(rootId)) return acc;
+      acc.add(rootId);
+      state.edges.filter(edge => edge.from === rootId).forEach(edge => collectDescendantIds(edge.to, acc));
+      return acc;
+    }
+    function shiftNodeSet(nodeIds, dx, dy) {
+      nodeIds.forEach((id) => {
+        const node = getNode(id);
+        if (!node) return;
+        node.x = maybeSnap(node.x + dx);
+        node.y = maybeSnap(node.y + dy);
+      });
+    }
+    function resolveInsertedNodeOverlap(insertedNode, direction) {
+      const shiftX = direction === 'right' ? maybeSnap(insertedNode.w + 80) : 0;
+      const shiftY = direction === 'down' ? maybeSnap(insertedNode.h + 70) : 0;
+      if (!shiftX && !shiftY) return;
+      const protectedIds = new Set([insertedNode.id]);
+      let moved = true;
+      while (moved) {
+        moved = false;
+        const targetBounds = expandBounds(boundsOfNode(insertedNode), 24, 24);
+        for (const node of state.nodes) {
+          if (protectedIds.has(node.id)) continue;
+          if (!boundsIntersect(targetBounds, boundsOfNode(node))) continue;
+          const subtreeIds = collectDescendantIds(node.id);
+          subtreeIds.forEach((id) => protectedIds.add(id));
+          shiftNodeSet(subtreeIds, shiftX, shiftY);
+          moved = true;
+        }
+      }
+    }
     function wrapText(text, maxCharsPerLine = 12) {
       const lines = [];
       const raw = String(text || '').split(/\n/);
@@ -651,6 +695,7 @@
       commitHistory();
       const child = addNodeAt(base.x + base.w + 80, base.y, state.shapeToAdd);
       state.edges.push(createEdge(base.id, child.id));
+      resolveInsertedNodeOverlap(child, 'right');
       render();
       openFloatingEditorForNode(child);
     }
@@ -664,6 +709,7 @@
       commitHistory();
       const sibling = addNodeAt(base.x, base.y + Math.max(base.h, 60) + 70, state.shapeToAdd);
       state.edges.push(createEdge(parent.id, sibling.id));
+      resolveInsertedNodeOverlap(sibling, 'down');
       render();
       openFloatingEditorForNode(sibling);
     }
