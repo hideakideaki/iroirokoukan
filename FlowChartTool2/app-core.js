@@ -75,6 +75,7 @@ const state = {
   view: { x: -400, y: -300, scale: 1 },
   idSeq: 1,
   editingNodeId: null,
+  lastBrainstormNodeId: null,
   tempMouse: null,
   guides: [],
   history: [],
@@ -411,6 +412,12 @@ function getEdgeHandleTarget(target) {
 function pointInsideNode(node, point) {
   const b = boundsOfNode(node);
   return point.x >= b.left && point.x <= b.right && point.y >= b.top && point.y <= b.bottom;
+}
+function getTopNodeAtPoint(point, excludedIds = []) {
+  const excluded = new Set(excludedIds);
+  return [...sortedVisibleNodes()]
+    .reverse()
+    .find((candidate) => !excluded.has(candidate.id) && pointInsideNode(candidate, point));
 }
 function nearestPortSide(node, point) {
   const ports = getPorts(node);

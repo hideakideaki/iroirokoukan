@@ -278,6 +278,7 @@ function loadData(data) {
   state.selectedIds = state.nodes[0] ? [state.nodes[0].id] : [];
   state.primarySelectedId = state.nodes[0]?.id || null;
   state.selectedEdgeId = null;
+  state.lastBrainstormNodeId = null;
   state.history = [];
   state.future = [];
   normalizeEdges();
@@ -464,5 +465,6 @@ function createInitial() {
   state.selectedIds = [state.nodes[0].id];
   state.primarySelectedId = state.nodes[0].id;
   state.selectedEdgeId = null;
+  state.lastBrainstormNodeId = null;
   render();
 }

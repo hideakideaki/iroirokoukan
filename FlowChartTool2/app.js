@@ -1,3 +1,12 @@
+if (!modeChips.querySelector('[data-mode="brainstorm"]')) {
+  const brainstormChip = document.createElement('div');
+  brainstormChip.className = 'chip';
+  brainstormChip.dataset.mode = 'brainstorm';
+  brainstormChip.textContent = 'Brainstorm';
+  const connectChip = modeChips.querySelector('[data-mode="connect"]');
+  modeChips.insertBefore(brainstormChip, connectChip || null);
+}
+
 svg.addEventListener('pointerdown', (e) => {
   svg.setPointerCapture(e.pointerId);
   const world = screenToWorld(e.clientX, e.clientY);
@@ -10,6 +19,7 @@ svg.addEventListener('pointerdown', (e) => {
     nodeId: node?.id || null,
     clientX: e.clientX,
     clientY: e.clientY,
+    altKey: e.altKey,
     moved: false,
   };
 
@@ -27,6 +37,11 @@ svg.addEventListener('pointerdown', (e) => {
   }
   if (node && !wantPan) {
     if (getLayer(node.layerId)?.locked) return;
+    if (state.mode === 'brainstorm') {
+      commitHistory();
+      addBrainstormNode({ x: world.x, y: world.y });
+      return;
+    }
     if (state.mode === 'connect') {
       if (!state.connectFrom) {
         if (!isSelected(node.id)) setPrimarySelection(node.id, false);
@@ -68,6 +83,11 @@ svg.addEventListener('pointerdown', (e) => {
   if (state.mode === 'add') {
     commitHistory();
     addNodeAt(world.x, world.y, state.shapeToAdd);
+    return;
+  }
+  if (state.mode === 'brainstorm') {
+    commitHistory();
+    addBrainstormNode({ x: world.x, y: world.y });
     return;
   }
   if (!wantPan) {
@@ -153,6 +173,11 @@ svg.addEventListener('pointermove', (e) => {
 svg.addEventListener('pointerup', (e) => {
   const clickedNode = state.pointerDownInfo?.nodeId ? getNode(state.pointerDownInfo.nodeId) : null;
   const clickInfo = state.pointerDownInfo;
+  const draggedRootIds = state.dragRootIds ? [...state.dragRootIds] : [];
+  const draggedNodeIds = state.draggingNodeIds ? [...state.draggingNodeIds] : [];
+  const draggedOrigins = state.dragOrigins ? new Map(state.dragOrigins) : null;
+  const dropPoint = screenToWorld(e.clientX, e.clientY);
+  const droppedNode = getTopNodeAtPoint(dropPoint, draggedRootIds);
   state.draggingNodeIds = null;
   state.dragRootIds = null;
   state.draggingEdgeHandle = null;
@@ -175,6 +200,25 @@ svg.addEventListener('pointerup', (e) => {
     state.primarySelectedId = state.selectedIds[0] || null;
     state.selectionRect = null;
     render();
+  }
+  if (
+    clickInfo?.moved
+    && clickInfo.altKey
+    && clickedNode
+    && droppedNode
+    && clickedNode.id !== droppedNode.id
+    && draggedRootIds.includes(clickedNode.id)
+  ) {
+    commitHistory();
+    draggedNodeIds.forEach((id) => {
+      const node = getNode(id);
+      const origin = draggedOrigins?.get(id);
+      if (!node || !origin) return;
+      node.x = origin.x;
+      node.y = origin.y;
+    });
+    connectNodes(droppedNode.id, clickedNode.id);
+    setStatus('Brainstorm接続: ドラッグしたノードを子として追加しました');
   }
   if (clickInfo?.nodeId && clickedNode && !clickInfo.moved) {
     const now = Date.now();
@@ -338,17 +382,12 @@ fileInput.addEventListener('change', async (e) => {
   }
 });
 document.getElementById('floatingOk').addEventListener('click', () => {
-  const node = getNode(state.editingNodeId);
-  if (!node) return;
-  commitHistory();
-  node.label = floatingText.value.trim() || node.label;
-  closeFloatingEditor();
-  render();
+  commitFloatingEditor();
 });
 floatingText.addEventListener('keydown', (e) => {
   if (e.key !== 'Enter' || e.shiftKey) return;
   e.preventDefault();
-  document.getElementById('floatingOk').click();
+  commitFloatingEditor({ continueBrainstorm: state.mode === 'brainstorm' });
 });
 document.getElementById('floatingCancel').addEventListener('click', closeFloatingEditor);
 document.getElementById('minimap').addEventListener('click', (e) => {

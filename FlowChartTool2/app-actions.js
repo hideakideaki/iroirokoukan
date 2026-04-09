@@ -2,6 +2,7 @@ function setMode(mode) {
   state.mode = mode;
   [...modeChips.querySelectorAll('.chip')].forEach((chip) => chip.classList.toggle('active', chip.dataset.mode === mode));
   state.connectFrom = null;
+  if (mode !== 'brainstorm') state.lastBrainstormNodeId = null;
   render();
   setStatus(`モード: ${mode}`);
 }
@@ -26,6 +27,34 @@ function addNodeAt(x, y, type = state.shapeToAdd) {
   state.primarySelectedId = node.id;
   state.selectedEdgeId = null;
   render();
+  return node;
+}
+function getNextBrainstormPosition(seedPoint = null) {
+  const previous = state.lastBrainstormNodeId ? getNode(state.lastBrainstormNodeId) : null;
+  if (previous) {
+    return {
+      x: maybeSnap(previous.x),
+      y: maybeSnap(previous.y + Math.max(previous.h, 60) + 28),
+    };
+  }
+  if (seedPoint) {
+    return {
+      x: maybeSnap(seedPoint.x),
+      y: maybeSnap(seedPoint.y),
+    };
+  }
+  const bounds = visibleWorldBounds();
+  return {
+    x: maybeSnap((bounds.left + bounds.right) / 2),
+    y: maybeSnap((bounds.top + bounds.bottom) / 2),
+  };
+}
+function addBrainstormNode(seedPoint = null) {
+  const pos = getNextBrainstormPosition(seedPoint);
+  const node = addNodeAt(pos.x, pos.y, state.shapeToAdd);
+  state.lastBrainstormNodeId = node.id;
+  openFloatingEditorForNode(node);
+  setStatus('Brainstorm: Enterで次のアイデアへ進みます');
   return node;
 }
 function addChildNode() {
@@ -301,6 +330,18 @@ function openFloatingEditorForNode(node) {
 function closeFloatingEditor() {
   floatingEditor.style.display = 'none';
   state.editingNodeId = null;
+}
+function commitFloatingEditor({ continueBrainstorm = false } = {}) {
+  const node = getNode(state.editingNodeId);
+  if (!node) return;
+  commitHistory();
+  node.label = floatingText.value.trim() || node.label;
+  state.lastBrainstormNodeId = node.id;
+  closeFloatingEditor();
+  render();
+  if (continueBrainstorm && state.mode === 'brainstorm') {
+    addBrainstormNode();
+  }
 }
 function applyInspectorChanges(commit = false) {
   const node = getPrimaryNode();
