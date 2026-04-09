@@ -9,63 +9,68 @@
 <body>
   <header class="topbar">
     <div class="topbar-brand">FlowChartTool2</div>
-    <nav class="menubar">
+    <nav class="menubar" aria-label="main menu">
       <div class="menu-group">
         <button class="menu-root" type="button">ファイル</button>
         <div class="menu-dropdown">
-          <button type="button" data-trigger="btnNew">新規作成</button>
-          <button type="button" data-trigger="btnSaveJson">JSON保存</button>
-          <button type="button" data-trigger="btnLoadJson">JSON読込</button>
-          <button type="button" data-trigger="btnSaveMermaid">Mermaid保存</button>
-          <button type="button" data-trigger="btnLoadMermaid">Mermaid読込</button>
-          <button type="button" data-trigger="btnSaveText">Text保存</button>
-          <button type="button" data-trigger="btnLoadText">Text読込</button>
-          <button type="button" data-trigger="btnSaveLocal">ブラウザ保存</button>
-          <button type="button" data-trigger="btnLoadLocal">ブラウザ読込</button>
-          <button type="button" data-trigger="btnExportPng">PNG書き出し</button>
-          <button type="button" data-trigger="btnExportSvg">SVG書き出し</button>
+          <button id="btnNew" type="button" class="warn">新規作成</button>
+          <button id="btnSaveJson" type="button">JSON保存</button>
+          <button id="btnLoadJson" type="button">JSON読込</button>
+          <button id="btnSaveMermaid" type="button">Mermaid保存</button>
+          <button id="btnLoadMermaid" type="button">Mermaid読込</button>
+          <button id="btnSaveText" type="button">Text保存</button>
+          <button id="btnLoadText" type="button">Text読込</button>
+          <button id="btnSaveLocal" type="button">ブラウザ保存</button>
+          <button id="btnLoadLocal" type="button">ブラウザ読込</button>
+          <button id="btnExportPng" type="button" class="secondary">PNG書き出し</button>
+          <button id="btnExportSvg" type="button" class="secondary">SVG書き出し</button>
         </div>
       </div>
+
       <div class="menu-group">
         <button class="menu-root" type="button">編集</button>
         <div class="menu-dropdown">
-          <button type="button" data-trigger="btnUndo">Undo</button>
-          <button type="button" data-trigger="btnRedo">Redo</button>
-          <button type="button" data-trigger="btnDuplicate">複製</button>
-          <button type="button" data-trigger="btnDelete">削除</button>
           <button type="button" data-trigger="btnGroup">グループ化</button>
           <button type="button" data-trigger="btnUngroup">グループ解除</button>
-        </div>
-      </div>
-      <div class="menu-group">
-        <button class="menu-root" type="button">挿入</button>
-        <div class="menu-dropdown">
-          <button type="button" data-trigger="btnAddCenter">中央に図形を追加</button>
           <button type="button" data-trigger="btnMakeContainer">選択項目をコンテナ化</button>
+          <button type="button" data-trigger="btnBringFront">前面へ</button>
+          <button type="button" data-trigger="btnSendBack">背面へ</button>
           <button type="button" data-trigger="btnAddLayer">レイヤー追加</button>
+          <button type="button" data-trigger="btnRenameLayer">レイヤー名変更</button>
         </div>
       </div>
+
       <div class="menu-group">
         <button class="menu-root" type="button">配置</button>
         <div class="menu-dropdown">
-          <button type="button" data-trigger="btnAlignLeft">左揃え</button>
-          <button type="button" data-trigger="btnAlignCenter">中央揃え</button>
-          <button type="button" data-trigger="btnAlignRight">右揃え</button>
-          <button type="button" data-trigger="btnAlignTop">上揃え</button>
-          <button type="button" data-trigger="btnAlignMiddle">中央揃え(縦)</button>
-          <button type="button" data-trigger="btnAlignBottom">下揃え</button>
-          <button type="button" data-trigger="btnDistributeH">横方向に整列</button>
-          <button type="button" data-trigger="btnDistributeV">縦方向に整列</button>
-          <button type="button" data-trigger="btnSameSize">同じサイズ</button>
+          <button id="btnAlignLeft" type="button">左揃え</button>
+          <button id="btnAlignCenter" type="button">中央揃え</button>
+          <button id="btnAlignRight" type="button">右揃え</button>
+          <button id="btnAlignTop" type="button">上揃え</button>
+          <button id="btnAlignMiddle" type="button">上下中央</button>
+          <button id="btnAlignBottom" type="button">下揃え</button>
+          <button id="btnDistributeH" type="button">横方向に均等配置</button>
+          <button id="btnDistributeV" type="button">縦方向に均等配置</button>
+          <button id="btnSameSize" type="button">同じサイズに揃える</button>
         </div>
       </div>
+
       <div class="menu-group">
         <button class="menu-root" type="button">表示</button>
         <div class="menu-dropdown">
-          <button type="button" data-trigger="btnAutoLayout">自動レイアウト</button>
-          <button type="button" data-trigger="zoomIn">拡大</button>
-          <button type="button" data-trigger="zoomReset">100%</button>
-          <button type="button" data-trigger="zoomOut">縮小</button>
+          <button id="zoomIn" type="button">拡大</button>
+          <button id="zoomReset" type="button">100%</button>
+          <button id="zoomOut" type="button">縮小</button>
+        </div>
+      </div>
+
+      <div class="menu-group">
+        <button class="menu-root" type="button">設定</button>
+        <div class="menu-dropdown menu-dropdown-form">
+          <label><input id="snapToggle" type="checkbox" checked /> グリッドにスナップ</label>
+          <label><input id="guideToggle" type="checkbox" checked /> 配置ガイドを表示</label>
+          <label><input id="portToggle" type="checkbox" checked /> 接続ポートを表示</label>
+          <label><input id="moveChildrenToggle" type="checkbox" checked /> 親移動時に子も追従</label>
         </div>
       </div>
     </nav>
@@ -73,29 +78,24 @@
 
   <div class="toolrow">
     <div class="toolrow-group">
-      <button class="menu-btn" id="btnLeftMenu">左</button>
-      <button class="menu-btn" id="btnRightMenu">右</button>
-      <button type="button" data-trigger="btnUndo">元に戻す</button>
-      <button type="button" data-trigger="btnRedo">やり直し</button>
-      <button type="button" data-trigger="btnDuplicate">複製</button>
-      <button type="button" data-trigger="btnDelete">削除</button>
-    </div>
-    <div class="toolrow-group">
-      <button type="button" data-trigger="btnAlignLeft">左揃え</button>
-      <button type="button" data-trigger="btnAlignCenter">中央揃え</button>
-      <button type="button" data-trigger="btnAlignRight">右揃え</button>
+      <button class="menu-btn" id="btnLeftMenu" type="button">左パネル</button>
+      <button class="menu-btn" id="btnRightMenu" type="button">右パネル</button>
+      <button id="btnUndo" type="button">Undo</button>
+      <button id="btnRedo" type="button">Redo</button>
+      <button id="btnDuplicate" type="button">複製</button>
+      <button id="btnDelete" type="button" class="danger">削除</button>
     </div>
     <div class="toolrow-group toolrow-zoom">
-      <button id="zoomOut">-</button>
-      <button id="zoomReset">100%</button>
-      <button id="zoomIn">+</button>
+      <button type="button" data-trigger="zoomOut">-</button>
+      <button type="button" data-trigger="zoomReset">100%</button>
+      <button type="button" data-trigger="zoomIn">+</button>
     </div>
   </div>
 
   <div class="app">
     <aside class="panel leftbar" id="leftbar">
       <div class="section">
-        <h2>ツール</h2>
+        <h2>作図</h2>
         <label>モード</label>
         <div class="chips" id="modeChips">
           <div class="chip active" data-mode="select">選択</div>
@@ -103,6 +103,7 @@
           <div class="chip" data-mode="connect">接続</div>
           <div class="chip" data-mode="pan">パン</div>
         </div>
+
         <label>図形ライブラリ</label>
         <div class="shape-grid" id="shapeLibrary">
           <div class="shape-card active" data-shape="mind"><div class="shape-preview"></div><div>マインド</div></div>
@@ -111,86 +112,24 @@
           <div class="shape-card" data-shape="start"><div class="shape-preview start"></div><div>開始 / 終了</div></div>
           <div class="shape-card" data-shape="container"><div class="shape-preview container"></div><div>コンテナ</div></div>
         </div>
+
         <label>接続線の種類</label>
         <select id="connectorType">
           <option value="orthogonal">直交</option>
           <option value="bezier">ベジェ</option>
           <option value="straight">直線</option>
         </select>
-        <div class="row-wrap" style="margin-top:10px;">
-          <button id="btnAddCenter" class="primary">中央に図形を追加</button>
-          <button id="btnAutoLayout">自動レイアウト</button>
-        </div>
+
       </div>
 
       <div class="section">
-        <h2>編集</h2>
-        <div class="row-wrap">
-          <button id="btnUndo">Undo</button>
-          <button id="btnRedo">Redo</button>
-          <button id="btnDuplicate">複製</button>
-          <button id="btnDelete" class="danger">削除</button>
-        </div>
-        <div class="row-wrap">
-          <button id="btnAlignLeft">左揃え</button>
-          <button id="btnAlignCenter">中央揃え</button>
-          <button id="btnAlignRight">右揃え</button>
-        </div>
-        <div class="row-wrap">
-          <button id="btnAlignTop">上揃え</button>
-          <button id="btnAlignMiddle">中央揃え(縦)</button>
-          <button id="btnAlignBottom">下揃え</button>
-        </div>
-        <div class="row-wrap">
-          <button id="btnDistributeH">横方向に整列</button>
-          <button id="btnDistributeV">縦方向に整列</button>
-          <button id="btnSameSize">同じサイズ</button>
-        </div>
-        <div class="row-wrap">
-          <button id="btnGroup">グループ化</button>
-          <button id="btnUngroup">解除</button>
-        </div>
-        <div class="row-wrap">
-          <button id="btnBringFront">前面へ</button>
-          <button id="btnSendBack">背面へ</button>
-        </div>
-      </div>
-
-      <div class="section">
-        <h2>入出力</h2>
-        <div class="row-wrap">
-          <button id="btnSaveJson">JSON保存</button>
-          <button id="btnLoadJson">JSON読込</button>
-          <button id="btnSaveMermaid">Mermaid保存</button>
-          <button id="btnLoadMermaid">Mermaid読込</button>
-          <button id="btnSaveText">Text保存</button>
-          <button id="btnLoadText">Text読込</button>
-          <button id="btnExportPng" class="secondary">PNG書き出し</button>
-          <button id="btnExportSvg" class="secondary">SVG書き出し</button>
-          <input id="fileInput" type="file" accept=".json,.mmd,.mermaid,.txt,text/plain" style="display:none;" />
-        </div>
-        <div class="row-wrap">
-          <button id="btnSaveLocal">ブラウザ保存</button>
-          <button id="btnLoadLocal">ブラウザ読込</button>
-          <button id="btnNew" class="warn">新規作成</button>
-        </div>
-      </div>
-
-      <div class="section">
-        <h2>設定</h2>
-        <label><input id="snapToggle" type="checkbox" checked /> グリッドにスナップ</label>
-        <label><input id="guideToggle" type="checkbox" checked /> 整列ガイドを表示</label>
-        <label><input id="portToggle" type="checkbox" checked /> 接続ポートを表示</label>
-      </div>
-
-      <div class="section">
-        <h2>操作</h2>
+        <h2>クイックガイド</h2>
         <div class="hint">
-          ・空白ドラッグで範囲選択<br>
+          ・ドラッグで移動、クリックで選択<br>
           ・<span class="kbd">Shift</span>+クリックで複数選択<br>
           ・右下ハンドルでサイズ変更<br>
-          ・<span class="kbd">Tab</span> で右に子ノードを追加<br>
-          ・<span class="kbd">Enter</span> で下に兄弟ノードを追加<br>
+          ・<span class="kbd">Tab</span> で子ノード追加<br>
+          ・<span class="kbd">Enter</span> で下にノード追加<br>
           ・接続モードでノードをクリックして接続<br>
           ・<span class="kbd">Ctrl</span>+<span class="kbd">Z</span> / <span class="kbd">Ctrl</span>+<span class="kbd">Y</span><br>
           ・<span class="kbd">Del</span> で削除<br>
@@ -250,8 +189,8 @@
         <label>ノード編集</label>
         <textarea id="floatingText"></textarea>
         <div class="row-wrap" style="margin-top:8px;">
-          <button id="floatingOk" class="primary">OK</button>
-          <button id="floatingCancel">キャンセル</button>
+          <button id="floatingOk" type="button" class="primary">OK</button>
+          <button id="floatingCancel" type="button">キャンセル</button>
         </div>
       </div>
     </main>
@@ -282,7 +221,7 @@
             <input id="selectedFill" type="color" value="#192447" />
           </div>
           <div style="flex:1;">
-            <label>枠線色</label>
+            <label>線色</label>
             <input id="selectedStroke" type="color" value="#7389df" />
           </div>
         </div>
@@ -293,8 +232,8 @@
           </div>
           <div style="flex:1;"></div>
         </div>
-        <label><input id="selectedNoStroke" type="checkbox" /> 枠線なし</label>
-        <label>ノード種別</label>
+        <label><input id="selectedNoStroke" type="checkbox" /> 線を表示しない</label>
+        <label>ノード種類</label>
         <select id="selectedType">
           <option value="mind">マインドマップ</option>
           <option value="process">フロー: 処理</option>
@@ -305,8 +244,8 @@
         <label>レイヤー</label>
         <select id="selectedLayer"></select>
         <div class="row-wrap" style="margin-top:10px;">
-          <button id="btnApply">適用</button>
-          <button id="btnMakeContainer">選択項目をコンテナ化</button>
+          <button id="btnApply" type="button">適用</button>
+          <button id="btnMakeContainer" type="button">選択項目をコンテナ化</button>
         </div>
         <div class="status" id="status"></div>
       </div>
@@ -314,14 +253,28 @@
       <div class="section">
         <h2>レイヤー</h2>
         <div class="row-wrap">
-          <button id="btnAddLayer">レイヤー追加</button>
-          <button id="btnRenameLayer">名前変更</button>
+          <button id="btnAddLayer" type="button">レイヤー追加</button>
+          <button id="btnRenameLayer" type="button">名前変更</button>
         </div>
         <div class="layer-list" id="layerList"></div>
+      </div>
+
+      <div class="section">
+        <h2>整列と順序</h2>
+        <div class="row-wrap">
+          <button id="btnGroup" type="button">グループ化</button>
+          <button id="btnUngroup" type="button">解除</button>
+        </div>
+        <div class="row-wrap">
+          <button id="btnBringFront" type="button">前面へ</button>
+          <button id="btnSendBack" type="button">背面へ</button>
+        </div>
       </div>
     </aside>
   </div>
 
+  <input id="fileInput" type="file" accept=".json,.mmd,.mermaid,.txt,text/plain" style="display:none;" />
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

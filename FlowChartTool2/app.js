@@ -34,6 +34,7 @@
     const snapToggle = document.getElementById('snapToggle');
     const guideToggle = document.getElementById('guideToggle');
     const portToggle = document.getElementById('portToggle');
+    const moveChildrenToggle = document.getElementById('moveChildrenToggle');
 
     const GRID = 20;
     const MAJOR_GRID = 100;
@@ -60,6 +61,7 @@
       selectedEdgeId: null,
       connectFrom: null,
       draggingNodeIds: null,
+      dragRootIds: null,
       resizingNodeId: null,
       resizingStart: null,
       draggingCanvas: false,
@@ -201,6 +203,20 @@
       state.edges.filter(edge => edge.from === rootId).forEach(edge => collectDescendantIds(edge.to, acc));
       return acc;
     }
+    function collectDragNodeIds(baseIds) {
+      const ids = new Set(baseIds);
+      if (!moveChildrenToggle.checked) return [...ids];
+      baseIds.forEach((id) => collectDescendantIds(id, ids));
+      return [...ids];
+    }
+    function buildDragContext(rootIds) {
+      const draggingNodeIds = collectDragNodeIds(rootIds);
+      return {
+        rootIds: [...rootIds],
+        draggingNodeIds,
+        dragOrigins: new Map(draggingNodeIds.map(id => [id, { x: getNode(id).x, y: getNode(id).y }])),
+      };
+    }
     function shiftNodeSet(nodeIds, dx, dy) {
       nodeIds.forEach((id) => {
         const node = getNode(id);
@@ -209,23 +225,41 @@
         node.y = maybeSnap(node.y + dy);
       });
     }
+    function collectPushLaneIds(insertedNode, direction) {
+      const expanded = expandBounds(boundsOfNode(insertedNode), 28, 28);
+      const ids = new Set();
+      for (const node of state.nodes) {
+        if (node.id === insertedNode.id) continue;
+        const bounds = boundsOfNode(node);
+        if (direction === 'right') {
+          const sameBand = bounds.bottom > expanded.top && bounds.top < expanded.bottom;
+          const isAhead = bounds.cx >= insertedNode.x;
+          if (sameBand && isAhead) collectDescendantIds(node.id, ids);
+        } else {
+          const sameBand = bounds.right > expanded.left && bounds.left < expanded.right;
+          const isAhead = bounds.cy >= insertedNode.y;
+          if (sameBand && isAhead) collectDescendantIds(node.id, ids);
+        }
+      }
+      return ids;
+    }
     function resolveInsertedNodeOverlap(insertedNode, direction) {
       const shiftX = direction === 'right' ? maybeSnap(insertedNode.w + 80) : 0;
       const shiftY = direction === 'down' ? maybeSnap(insertedNode.h + 70) : 0;
       if (!shiftX && !shiftY) return;
-      const protectedIds = new Set([insertedNode.id]);
       let moved = true;
       while (moved) {
         moved = false;
+        const laneIds = collectPushLaneIds(insertedNode, direction);
+        if (!laneIds.size) break;
         const targetBounds = expandBounds(boundsOfNode(insertedNode), 24, 24);
-        for (const node of state.nodes) {
-          if (protectedIds.has(node.id)) continue;
-          if (!boundsIntersect(targetBounds, boundsOfNode(node))) continue;
-          const subtreeIds = collectDescendantIds(node.id);
-          subtreeIds.forEach((id) => protectedIds.add(id));
-          shiftNodeSet(subtreeIds, shiftX, shiftY);
-          moved = true;
-        }
+        const overlapping = [...laneIds].some((id) => {
+          const node = getNode(id);
+          return node && boundsIntersect(targetBounds, boundsOfNode(node));
+        });
+        if (!overlapping) break;
+        shiftNodeSet(laneIds, shiftX, shiftY);
+        moved = true;
       }
     }
     function wrapText(text, maxCharsPerLine = 12) {
@@ -1312,53 +1346,118 @@
       if (!raw) return false;
       try { loadData(JSON.parse(raw)); setStatus('前回の自動保存を復元しました'); return true; } catch { return false; }
     }
-    function exportSvg() {
+    function getExportBounds() {
+      const nodes = sortedVisibleNodes();
+      if (!nodes.length) return null;
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      nodes.forEach((node) => {
+        const b = boundsOfNode(node);
+        minX = Math.min(minX, b.left);
+        minY = Math.min(minY, b.top);
+        maxX = Math.max(maxX, b.right);
+        maxY = Math.max(maxY, b.bottom);
+      });
+      const pad = 48;
+      minX -= pad;
+      minY -= pad;
+      maxX += pad;
+      maxY += pad;
+      return {
+        x: minX,
+        y: minY,
+        width: Math.max(1, maxX - minX),
+        height: Math.max(1, maxY - minY),
+      };
+    }
+    function buildExportSvg() {
+      const bounds = getExportBounds();
+      if (!bounds) return null;
       const clone = svg.cloneNode(true);
-      clone.setAttribute('width', svg.clientWidth);
-      clone.setAttribute('height', svg.clientHeight);
+      clone.querySelector('#viewport')?.setAttribute('transform', '');
+      clone.setAttribute('width', bounds.width);
+      clone.setAttribute('height', bounds.height);
+      clone.setAttribute('viewBox', `${bounds.x} ${bounds.y} ${bounds.width} ${bounds.height}`);
       clone.querySelector('#tempLayer')?.replaceChildren();
       clone.querySelector('#selectionLayer')?.replaceChildren();
       const bg = createSvg('rect');
-      bg.setAttribute('width', '100%'); bg.setAttribute('height', '100%'); bg.setAttribute('fill', '#0b1020');
+      bg.setAttribute('x', bounds.x);
+      bg.setAttribute('y', bounds.y);
+      bg.setAttribute('width', bounds.width);
+      bg.setAttribute('height', bounds.height);
+      bg.setAttribute('fill', '#0b1020');
       clone.insertBefore(bg, clone.firstChild);
+      return { clone, bounds };
+    }
+    function buildExportSurface() {
+      const exported = buildExportSvg();
+      if (!exported) return null;
+      const { clone, bounds } = exported;
+      const surface = document.createElement('div');
+      surface.style.position = 'fixed';
+      surface.style.left = '-100000px';
+      surface.style.top = '0';
+      surface.style.width = `${Math.ceil(bounds.width)}px`;
+      surface.style.height = `${Math.ceil(bounds.height)}px`;
+      surface.style.background = '#0b1020';
+      surface.style.overflow = 'hidden';
+      surface.style.pointerEvents = 'none';
+      surface.style.zIndex = '-1';
+      clone.style.width = '100%';
+      clone.style.height = '100%';
+      clone.style.display = 'block';
+      surface.appendChild(clone);
+      return { surface, bounds };
+    }
+    function exportSvg() {
+      const exported = buildExportSvg();
+      if (!exported) {
+        setStatus('書き出すノードがありません', true);
+        return;
+      }
+      const { clone } = exported;
       const xml = new XMLSerializer().serializeToString(clone);
       const blob = new Blob([xml], { type: 'image/svg+xml;charset=utf-8' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'diagram.svg';
+      a.download = `diagram_${formatTimestamp()}.svg`;
       a.click();
-      setStatus('SVGを書き出しました');
+      setStatus('全ノードをSVGで書き出しました');
     }
     function exportPng() {
-      const clone = svg.cloneNode(true);
-      clone.setAttribute('width', svg.clientWidth);
-      clone.setAttribute('height', svg.clientHeight);
-      clone.querySelector('#tempLayer')?.replaceChildren();
-      clone.querySelector('#selectionLayer')?.replaceChildren();
-      const bg = createSvg('rect');
-      bg.setAttribute('width', '100%'); bg.setAttribute('height', '100%'); bg.setAttribute('fill', '#0b1020');
-      clone.insertBefore(bg, clone.firstChild);
-      const xml = new XMLSerializer().serializeToString(clone);
-      const blob = new Blob([xml], { type: 'image/svg+xml;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = svg.clientWidth * 2;
-        canvas.height = svg.clientHeight * 2;
-        const ctx = canvas.getContext('2d');
-        ctx.scale(2, 2);
-        ctx.drawImage(img, 0, 0);
-        URL.revokeObjectURL(url);
+      if (typeof window.html2canvas !== 'function') {
+        setStatus('PNG書き出しライブラリの読み込みに失敗しました', true);
+        return;
+      }
+      const exported = buildExportSurface();
+      if (!exported) {
+        setStatus('書き出すノードがありません', true);
+        return;
+      }
+      const { surface, bounds } = exported;
+      document.body.appendChild(surface);
+      window.html2canvas(surface, {
+        backgroundColor: '#0b1020',
+        useCORS: true,
+        scale: 2,
+        width: Math.ceil(bounds.width),
+        height: Math.ceil(bounds.height),
+      }).then((canvas) => {
         canvas.toBlob((pngBlob) => {
+          if (!pngBlob) {
+            setStatus('PNG書き出しに失敗しました', true);
+            return;
+          }
           const a = document.createElement('a');
           a.href = URL.createObjectURL(pngBlob);
-          a.download = 'diagram.png';
+          a.download = `diagram_${formatTimestamp()}.png`;
           a.click();
+          setStatus('全ノードをPNGで書き出しました');
         });
-      };
-      img.src = url;
-      setStatus('PNGを書き出しました');
+      }).catch(() => {
+        setStatus('PNG書き出しに失敗しました', true);
+      }).finally(() => {
+        surface.remove();
+      });
     }
 
     function createInitial() {
@@ -1430,9 +1529,12 @@
           return;
         }
         if (e.shiftKey) toggleSelection(node.id); else if (!isSelected(node.id)) setPrimarySelection(node.id, false);
-        state.draggingNodeIds = [...state.selectedIds];
+        const rootIds = e.shiftKey ? [...state.selectedIds] : [node.id];
+        const dragContext = buildDragContext(rootIds);
+        state.dragRootIds = dragContext.rootIds;
+        state.draggingNodeIds = dragContext.draggingNodeIds;
         state.dragStartWorld = world;
-        state.dragOrigins = new Map(state.draggingNodeIds.map(id => [id, { x: getNode(id).x, y: getNode(id).y }]));
+        state.dragOrigins = dragContext.dragOrigins;
         return;
       }
       if (edge && !wantPan) {
@@ -1526,6 +1628,7 @@
       const clickedNode = state.pointerDownInfo?.nodeId ? getNode(state.pointerDownInfo.nodeId) : null;
       const clickInfo = state.pointerDownInfo;
       state.draggingNodeIds = null;
+      state.dragRootIds = null;
       state.draggingEdgeHandle = null;
       state.resizingNodeId = null;
       state.resizingStart = null;
@@ -1609,25 +1712,6 @@
       render();
     });
 
-    document.getElementById('btnAddCenter').addEventListener('click', () => {
-      commitHistory();
-      const b = visibleWorldBounds();
-      addNodeAt((b.left + b.right) / 2, (b.top + b.bottom) / 2, state.shapeToAdd);
-    });
-    document.getElementById('btnAutoLayout').addEventListener('click', () => {
-      if (!state.nodes.length) return;
-      commitHistory();
-      const center = getPrimaryNode() || state.nodes[0];
-      const neighbors = [...new Set(state.edges.filter(e => e.from === center.id).map(e => e.to).concat(state.edges.filter(e => e.to === center.id).map(e => e.from)))].map(getNode).filter(Boolean);
-      if (!neighbors.length) return setStatus('中心ノードに接続されたノードがありません', true);
-      const radiusX = 260, radiusY = Math.max(140, neighbors.length * 26);
-      neighbors.forEach((node, i) => {
-        const angle = (-Math.PI / 2) + (i / Math.max(1, neighbors.length)) * Math.PI * 2;
-        node.x = maybeSnap(center.x + Math.cos(angle) * radiusX);
-        node.y = maybeSnap(center.y + Math.sin(angle) * radiusY);
-      });
-      render();
-    });
     document.getElementById('btnUndo').addEventListener('click', undo);
     document.getElementById('btnRedo').addEventListener('click', redo);
     document.getElementById('btnDuplicate').addEventListener('click', duplicateSelection);

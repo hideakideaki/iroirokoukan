@@ -85,6 +85,22 @@
       padding: 9px 10px;
       border-radius: 10px;
     }
+    .menu-dropdown-form {
+      min-width: 240px;
+    }
+    .menu-dropdown-form label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      padding: 8px 10px;
+      border-radius: 10px;
+      color: var(--text);
+      background: rgba(255,255,255,.02);
+    }
+    .menu-dropdown-form label:hover {
+      background: rgba(255,255,255,.05);
+    }
     .toolrow {
       display: flex;
       align-items: center;
@@ -372,8 +388,10 @@
       .toolrow-group {
         gap: 6px;
       }
-      .toolrow-group:not(.toolrow-zoom) button:not(.menu-btn) {
-        display: none;
+      .toolrow-group:first-child button:nth-of-type(3),
+      .toolrow-group:first-child button:nth-of-type(4),
+      .toolrow-group:nth-child(2) button {
+        display: inline-flex;
       }
       .topbar-brand {
         display: none;
