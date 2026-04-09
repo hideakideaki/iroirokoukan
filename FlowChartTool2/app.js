@@ -298,6 +298,17 @@
     function orthogonalPath(start, end, fromSide, toSide) {
       const startOuter = offsetPoint(start, fromSide, 26);
       const endOuter = offsetPoint(end, toSide, 26);
+      if (startOuter.x === endOuter.x || startOuter.y === endOuter.y) {
+        return `M ${start.x} ${start.y} L ${startOuter.x} ${startOuter.y} L ${endOuter.x} ${endOuter.y} L ${end.x} ${end.y}`;
+      }
+      const isHorizontalPair = (fromSide === 'right' && toSide === 'left') || (fromSide === 'left' && toSide === 'right');
+      const isVerticalPair = (fromSide === 'top' && toSide === 'bottom') || (fromSide === 'bottom' && toSide === 'top');
+      if (isHorizontalPair) {
+        return `M ${start.x} ${start.y} L ${startOuter.x} ${startOuter.y} L ${endOuter.x} ${startOuter.y} L ${endOuter.x} ${endOuter.y} L ${end.x} ${end.y}`;
+      }
+      if (isVerticalPair) {
+        return `M ${start.x} ${start.y} L ${startOuter.x} ${startOuter.y} L ${startOuter.x} ${endOuter.y} L ${endOuter.x} ${endOuter.y} L ${end.x} ${end.y}`;
+      }
       const horizontalFirst = Math.abs(startOuter.x - endOuter.x) >= Math.abs(startOuter.y - endOuter.y);
       if (horizontalFirst) {
         const mx = (startOuter.x + endOuter.x) / 2;
@@ -336,11 +347,11 @@
       };
       return `url(#${map[side] || 'arrowRight'}${selected})`;
     }
-    function createEdge(fromId, toId, connector = connectorTypeEl.value) {
+    function createEdge(fromId, toId, connector = connectorTypeEl.value, sides = null) {
       const fromNode = getNode(fromId);
       const toNode = getNode(toId);
-      const sides = (fromNode && toNode) ? inferPortSides(fromNode, toNode) : { fromSide: 'right', toSide: 'left' };
-      return { id: uid('e'), from: fromId, to: toId, connector, fromSide: sides.fromSide, toSide: sides.toSide };
+      const resolvedSides = sides || ((fromNode && toNode) ? inferPortSides(fromNode, toNode) : { fromSide: 'right', toSide: 'left' });
+      return { id: uid('e'), from: fromId, to: toId, connector, fromSide: resolvedSides.fromSide, toSide: resolvedSides.toSide };
     }
 
     function createLayerOptions() {
@@ -694,7 +705,7 @@
       if (!base) return;
       commitHistory();
       const child = addNodeAt(base.x + base.w + 80, base.y, state.shapeToAdd);
-      state.edges.push(createEdge(base.id, child.id));
+      state.edges.push(createEdge(base.id, child.id, connectorTypeEl.value, { fromSide: 'right', toSide: 'left' }));
       resolveInsertedNodeOverlap(child, 'right');
       render();
       openFloatingEditorForNode(child);
@@ -708,7 +719,7 @@
       if (!parent) return;
       commitHistory();
       const sibling = addNodeAt(base.x, base.y + Math.max(base.h, 60) + 70, state.shapeToAdd);
-      state.edges.push(createEdge(parent.id, sibling.id));
+      state.edges.push(createEdge(parent.id, sibling.id, connectorTypeEl.value, { fromSide: 'right', toSide: 'left' }));
       resolveInsertedNodeOverlap(sibling, 'down');
       render();
       openFloatingEditorForNode(sibling);
