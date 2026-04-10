@@ -34,7 +34,6 @@ const floatingText = document.getElementById('floatingText');
 const snapToggle = document.getElementById('snapToggle');
 const guideToggle = document.getElementById('guideToggle');
 const portToggle = document.getElementById('portToggle');
-const moveChildrenToggle = document.getElementById('moveChildrenToggle');
 
 const GRID = 20;
 const MAJOR_GRID = 100;
@@ -204,14 +203,8 @@ function collectDescendantIds(rootId, acc = new Set()) {
   state.edges.filter((edge) => edge.from === rootId).forEach((edge) => collectDescendantIds(edge.to, acc));
   return acc;
 }
-function collectDragNodeIds(baseIds) {
-  const ids = new Set(baseIds);
-  if (!moveChildrenToggle.checked) return [...ids];
-  baseIds.forEach((id) => collectDescendantIds(id, ids));
-  return [...ids];
-}
 function buildDragContext(rootIds) {
-  const draggingNodeIds = collectDragNodeIds(rootIds);
+  const draggingNodeIds = [...rootIds];
   return {
     rootIds: [...rootIds],
     draggingNodeIds,

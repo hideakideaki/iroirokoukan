@@ -9,7 +9,7 @@
 *{box-sizing:border-box}html,body{height:100%;overflow:hidden}body{margin:0;background:linear-gradient(180deg,#0d1117,#101418);color:var(--text);font:14px/1.55 "Segoe UI","Yu Gothic UI",sans-serif}
 .app{display:grid;grid-template-rows:auto auto 1fr auto;height:100vh}.bar,.status{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:12px 16px;background:rgba(16,20,24,.88);border-bottom:1px solid #ffffff14}.status{border-bottom:0;border-top:1px solid #ffffff14;color:var(--muted);justify-content:space-between;font-size:12px}
 .main{display:grid;grid-template-columns:300px minmax(0,1fr);gap:14px;padding:14px;min-height:0;height:100%;overflow:hidden}.panel{min-height:0;display:flex;flex-direction:column;background:var(--panel);border:1px solid #ffffff14;border-radius:14px;overflow:hidden}.panel h2{margin:0;padding:12px 14px;font-size:14px;border-bottom:1px solid #ffffff14;background:#ffffff05;flex:0 0 auto}.body{padding:12px;overflow:auto;min-height:0;flex:1 1 auto}.right{min-height:0;height:100%;overflow:auto;display:grid;grid-template-columns:minmax(300px,.9fr) minmax(360px,1.1fr);gap:14px;align-content:start}
-button,.pick,input{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;font:inherit}.pick,button{padding:9px 12px;cursor:pointer}.pick input{display:none}button.primary{background:linear-gradient(180deg,#7cc4ff,#52a2f3);color:#062235;font-weight:700}button:disabled{opacity:.5;cursor:default}input{padding:9px 12px;min-width:220px;flex:1}
+button,.pick,input{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:10px;font:inherit}.pick,button{padding:9px 12px;cursor:pointer}.pick input{display:none}button.primary{background:linear-gradient(180deg,#7cc4ff,#52a2f3);color:#062235;font-weight:700}button:disabled{opacity:.5;cursor:default}input{padding:9px 12px;min-width:220px;flex:1}.search{position:relative;display:flex;align-items:center;flex:1;min-width:220px}.search input{width:100%;padding-right:36px}.iconbtn{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:24px;height:24px;padding:0;border-radius:999px;display:flex;align-items:center;justify-content:center;background:transparent;border:0;color:var(--muted);font-size:16px;line-height:1}.iconbtn:hover:not(:disabled){background:#ffffff10;color:var(--text)}.iconbtn:disabled{opacity:0;pointer-events:none}
 .stats,.list{display:flex;flex-direction:column;gap:8px}.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.chip{padding:5px 9px;border-radius:999px;border:1px solid var(--line);background:#7cc4ff14;font-size:12px}.item{padding:10px;border:1px solid #ffffff12;border-radius:10px;background:#ffffff04;cursor:pointer}.item.sel{border-color:#7cc4ff66;background:#7cc4ff18}.path,.hint{color:var(--muted);font-size:12px}.meta{display:grid;grid-template-columns:max-content 1fr;gap:7px 10px;margin-bottom:10px;font-size:12px}.meta .k{color:var(--muted)}pre{margin:0;padding:12px;border-radius:12px;background:var(--code);border:1px solid #ffffff12;color:#c9d3de;font:12px/1.6 Consolas,monospace;white-space:pre-wrap;word-break:break-word;min-height:220px}iframe{width:100%;height:100%;min-height:520px;border:0;background:#0f1115}.empty{padding:16px;border:1px dashed #ffffff20;border-radius:12px;color:var(--muted)}
 @media (max-width:1180px){.right{grid-template-columns:1fr}.preview{min-height:520px}}@media (max-width:820px){.main{grid-template-columns:1fr}.right{overflow:visible}}
 </style>
@@ -22,10 +22,11 @@ button,.pick,input{background:var(--panel2);color:var(--text);border:1px solid v
 <div class="app">
 <div class="bar">
 <label class="pick">Vault Folder<input id="vault" type="file" webkitdirectory directory multiple></label>
+<label class="pick">Files<input id="files" type="file" multiple accept=".md,.markdown,image/*"></label>
 <button id="one" class="primary" disabled>Export Selected HTML</button>
 <button id="all" disabled>Export All to ZIP</button>
 <button id="copy" disabled>Copy Preview HTML</button>
-<input id="q" placeholder="Filter notes by name or path">
+<label class="search"><input id="q" placeholder="Filter notes by name or path"><button id="clearq" class="iconbtn" type="button" aria-label="Clear search" disabled>×</button></label>
 </div>
 <div class="bar"><span class="hint">Reads Markdown from `notes` and images from `attachments`. Exported HTML embeds images.</span></div>
 <div class="main">
@@ -40,18 +41,21 @@ button,.pick,input{background:var(--panel2);color:var(--text);border:1px solid v
 <script>
 (()=>{"use strict";
 const S={root:"",notesRoot:"notes",attachmentsRoot:"attachments",files:new Map(),texts:new Map(),urls:new Map(),notes:[],lookup:new Map(),sel:"",q:""};
-const $=id=>document.getElementById(id),vault=$("vault"),one=$("one"),all=$("all"),copy=$("copy"),q=$("q"),chips=$("chips"),list=$("list"),meta=$("meta"),src=$("src"),frame=$("frame"),st=$("st");
+const $=id=>document.getElementById(id),vault=$("vault"),filesPick=$("files"),one=$("one"),all=$("all"),copy=$("copy"),q=$("q"),clearq=$("clearq"),chips=$("chips"),list=$("list"),meta=$("meta"),src=$("src"),frame=$("frame"),st=$("st");
 const IMG=new Set(["png","jpg","jpeg","gif","svg","webp","bmp","avif"]),MD=new Set(["md","markdown"]);
 marked.setOptions({gfm:true,breaks:false,headerIds:true,mangle:false});
 mermaid.initialize({startOnLoad:false,securityLevel:"loose",theme:"dark"});
 vault.onchange=async e=>{const fs=[...(e.target.files||[])];if(fs.length)await load(fs)};
-q.oninput=()=>{S.q=q.value.trim().toLowerCase();drawList()};
+filesPick.onchange=async e=>{const fs=[...(e.target.files||[])];if(fs.length)await load(fs)};
+q.oninput=()=>{S.q=q.value.trim().toLowerCase();drawList();updateSearchControls()};
+clearq.onclick=()=>{q.value="";S.q="";drawList();updateSearchControls();q.focus()};
 one.onclick=async()=>{const n=current();if(!n)return;setStatus("Building HTML...");download(new Blob([await buildStandalone(n)],{type:"text/html;charset=utf-8"}),n.out);setStatus(`Saved: ${n.out}`)};
 all.onclick=async()=>{if(!S.notes.length)return;setStatus("Building ZIP...");const z=new JSZip();for(const n of S.notes)z.file(n.out,await buildStandalone(n));download(await z.generateAsync({type:"blob"}),"obsidian-html-export.zip");setStatus(`ZIP saved: ${S.notes.length} notes`)};
 copy.onclick=async()=>{const n=current();if(!n)return;setStatus("Copying OneNote HTML...");try{const rendered=await render(n,"onenote");const richHtml=await prepareCopyHtml(rendered.html,n.base);const html=clipboardDoc(richHtml,n.base);const plain=plainFromHtml(richHtml);if(navigator.clipboard&&window.ClipboardItem){await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([html],{type:"text/html"}),"text/plain":new Blob([plain],{type:"text/plain"})})]);setStatus("OneNote-ready HTML copied to clipboard")}else{await navigator.clipboard.writeText(plain);setStatus("Clipboard copied as plain text")}}catch(e){setStatus(`Copy failed: ${e.message||e}`)}};
 window.addEventListener("message",async e=>{if(e.data?.type==="open-note"&&e.data?.path)await openNote(e.data.path)});
-async function load(fs){reset();S.root=rootName(fs);for(const f of fs)S.files.set(stripRoot(norm(f.webkitRelativePath||f.name),S.root),f);if(![...S.files.keys()].some(p=>p.startsWith("notes/"))&&[...S.files.keys()].some(p=>p.startsWith("note/")))S.notesRoot="note";for(const [p,f] of S.files){if(!p.startsWith(S.notesRoot+"/")||!MD.has(ext(p)))continue;const rel=p.slice(S.notesRoot.length+1);S.notes.push({file:f,full:p,rel,stem:rel.replace(/\.[^.]+$/,""),base:base(rel).replace(/\.[^.]+$/,""),out:rel.replace(/\.[^.]+$/,".html"),dir:dir(rel),search:""})}for(const n of S.notes){n.search=`${n.base}\n${n.rel}\n${(await text(n.full)).toLowerCase()}`}S.notes.sort((a,b)=>a.rel.localeCompare(b.rel,"ja"));buildLookup();drawChips();drawList();if(!S.notes.length){src.textContent="No Markdown files found in notes.";frame.srcdoc='<div style="padding:24px;color:#c9d1d9;background:#0d1117;font-family:sans-serif">No Markdown files found in notes.</div>';setStatus("No Markdown files found");return}one.disabled=all.disabled=copy.disabled=false;await openNote(S.notes[0].full);setStatus(`Vault loaded: ${S.notes.length} notes`)}
-function reset(){S.root="";S.notesRoot="notes";S.files.clear();S.texts.clear();S.urls.clear();S.notes=[];S.lookup.clear();S.sel="";chips.innerHTML=list.innerHTML=meta.innerHTML="";src.textContent="Load a vault to view Markdown.";frame.srcdoc="";one.disabled=all.disabled=copy.disabled=true}
+async function load(fs){reset();S.root=rootName(fs);for(const f of fs){const raw=norm(f.webkitRelativePath||f.name),path=stripRoot(raw,S.root)||norm(f.name);S.files.set(path,f)}if(![...S.files.keys()].some(p=>p.startsWith("notes/"))&&[...S.files.keys()].some(p=>p.startsWith("note/")))S.notesRoot="note";for(const [p,f] of S.files){if(!MD.has(ext(p)))continue;const inNotes=p.startsWith(S.notesRoot+"/"),rel=inNotes?p.slice(S.notesRoot.length+1):p;S.notes.push({file:f,full:p,rel,stem:rel.replace(/\.[^.]+$/,""),name:base(rel),base:base(rel).replace(/\.[^.]+$/,""),out:rel.replace(/\.[^.]+$/,".html"),dir:dir(rel),search:""})}for(const n of S.notes){n.search=`${n.name.toLowerCase()}\n${n.base.toLowerCase()}\n${n.rel.toLowerCase()}\n${n.out.toLowerCase()}\n${(await text(n.full)).toLowerCase()}`}S.notes.sort((a,b)=>a.rel.localeCompare(b.rel,"ja"));buildLookup();drawChips();drawList();updateSearchControls();if(!S.notes.length){src.textContent="No Markdown files found.";frame.srcdoc='<div style="padding:24px;color:#c9d1d9;background:#0d1117;font-family:sans-serif">No Markdown files found.</div>';setStatus("No Markdown files found");return}one.disabled=all.disabled=copy.disabled=false;await openNote(S.notes[0].full);setStatus(`Loaded: ${S.notes.length} notes`)}
+function reset(){S.root="";S.notesRoot="notes";S.files.clear();S.texts.clear();S.urls.clear();S.notes=[];S.lookup.clear();S.sel="";S.q="";q.value="";chips.innerHTML=list.innerHTML=meta.innerHTML="";src.textContent="Load a vault or files to view Markdown.";frame.srcdoc="";one.disabled=all.disabled=copy.disabled=true;updateSearchControls()}
+function updateSearchControls(){clearq.disabled=!q.value}
 function drawChips(){chips.innerHTML="";for(const t of [`Markdown ${S.notes.length}`,`Attachments ${[...S.files.keys()].filter(p=>p.startsWith(S.attachmentsRoot+"/")).length}`,`Folders ${new Set(S.notes.map(n=>dir(n.rel))).size}`]){const d=document.createElement("div");d.className="chip";d.textContent=t;chips.appendChild(d)}}
 function drawList(){list.innerHTML="";const ns=S.notes.filter(n=>!S.q||n.search.includes(S.q));if(!ns.length){list.innerHTML='<div class="empty">No matching notes.</div>';return}for(const n of ns){const d=document.createElement("div");d.className=`item${n.full===S.sel?" sel":""}`;d.innerHTML=`<div>${esc(n.base)}</div><div class="path">${esc(n.rel)}</div>`;d.onclick=()=>openNote(n.full);list.appendChild(d)}}
 function buildLookup(){for(const n of S.notes)for(const k of [n.stem,n.rel,n.base,n.stem.toLowerCase(),n.rel.toLowerCase(),n.base.toLowerCase()])if(!S.lookup.has(k))S.lookup.set(k,n)}
@@ -94,13 +98,25 @@ function previewDoc(html,title,standalone){const mermaidLib='<script src="https:
 function clipboardDoc(html,title){const doc=new DOMParser().parseFromString(`<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>${esc(title)}</title></head><body>${html}</body></html>`,"text/html"),body=doc.body;
 const paint=(sel,style)=>body.querySelectorAll(sel).forEach(el=>el.setAttribute("style",style));
 body.setAttribute("style","margin:0;color:#202124;background:#ffffff;font:12pt 'Yu Gothic UI','Segoe UI',sans-serif;line-height:1.6");
+flattenListsForOneNote(body);
 paint("h1","margin:0 0 14pt 0;font-size:22pt;line-height:1.25;font-weight:700;color:#111827");
 paint("h2","margin:18pt 0 10pt 0;padding-bottom:4pt;font-size:17pt;line-height:1.3;font-weight:700;color:#111827;border-bottom:1px solid #d1d5db");
 paint("h3","margin:16pt 0 8pt 0;font-size:14pt;line-height:1.35;font-weight:700;color:#111827");
 paint("h4,h5,h6","margin:14pt 0 8pt 0;font-size:12pt;line-height:1.35;font-weight:700;color:#111827");
 paint("p","margin:0 0 12pt 0");
-paint("ul,ol","margin:0 0 12pt 0;padding-left:1.4em");
-paint("li","margin:0 0 4pt 0");
+paint("ul","margin:0 0 12pt 0;padding-left:1.5em;list-style-type:disc");
+paint("ol","margin:0 0 12pt 0;padding-left:1.7em;list-style-type:decimal");
+paint("ul ul","margin:4pt 0 8pt 0;padding-left:1.4em;list-style-type:circle");
+paint("ul ul ul","margin:4pt 0 8pt 0;padding-left:1.4em;list-style-type:square");
+paint("ol ol","margin:4pt 0 8pt 0;padding-left:1.5em;list-style-type:lower-alpha");
+paint("ol ol ol","margin:4pt 0 8pt 0;padding-left:1.5em;list-style-type:lower-roman");
+paint("li","margin:0 0 4pt 0;padding-left:0");
+paint("li > p","margin:0");
+paint("li > ul,li > ol","margin-top:4pt;margin-bottom:6pt");
+paint("[data-onenote-list]","margin:0 0 12pt 0");
+paint(".onenote-list-item","margin:0 0 4pt 0;white-space:pre-wrap");
+paint(".onenote-list-prefix","white-space:pre-wrap;color:#111827");
+paint(".onenote-list-content","display:inline");
 paint("blockquote","margin:0 0 12pt 0;padding:8pt 12pt;border-left:4px solid #9ca3af;background:#f3f4f6;color:#374151");
 paint("pre","margin:0 0 12pt 0;padding:10pt 12pt;border:1px solid #d1d5db;background:#f8fafc;white-space:pre-wrap;word-break:break-word;font:10.5pt Consolas,monospace;color:#111827");
 paint("code","padding:1pt 4pt;border-radius:3pt;background:#f3f4f6;font:10.5pt Consolas,monospace;color:#b42318");
@@ -136,6 +152,8 @@ paint(".mermaid-rendered svg","max-width:100%;height:auto;display:block");
 paint(".mermaid-image","margin:0 0 12pt 0;max-width:100%;height:auto;display:block;border:1px solid #d1d5db;background:#ffffff;border-radius:8pt;padding:10pt");
 body.querySelectorAll(".onenote-note-ref").forEach(el=>{el.setAttribute("style","color:#475467;background:#f3f4f6;border:1px solid #d0d5dd;border-radius:999px;padding:1pt 6pt");if(el.tagName==="SPAN")el.removeAttribute("class")});
 return `<!doctype html>\n${doc.documentElement.outerHTML}`}
+function flattenListsForOneNote(root){const lists=[...root.querySelectorAll("ul,ol")].filter(el=>!el.closest("li ul, li ol"));for(const list of lists){const block=root.ownerDocument.createElement("div");block.setAttribute("data-onenote-list","1");appendListItems(block,list,0,[]);list.replaceWith(block)}}
+function appendListItems(out,list,depth,olState){const ordered=list.tagName==="OL";const items=[...list.children].filter(el=>el.tagName==="LI");let index=1;for(const li of items){const line=out.ownerDocument.createElement("div"),content=out.ownerDocument.createElement("div"),nested=[...li.children].filter(el=>el.tagName==="UL"||el.tagName==="OL"),parts=[...li.childNodes].filter(node=>!(node.nodeType===1&&(node.tagName==="UL"||node.tagName==="OL")));line.className="onenote-list-item";line.setAttribute("data-depth",String(depth));content.innerHTML=parts.map(node=>node.nodeType===3?esc(node.textContent||""):node.outerHTML).join("").trim()||"&nbsp;";const marker=ordered?`${index}.`:(depth===0?"•":depth===1?"◦":"▪"),indent="&nbsp;".repeat(depth*6);line.innerHTML=`<span class="onenote-list-prefix">${indent}${marker}&nbsp;</span><span class="onenote-list-content">${content.innerHTML}</span>`;out.appendChild(line);for(const child of nested)appendListItems(out,child,depth+1,olState);index++}}
 function plainFromHtml(html){return html.replace(/<br\s*\/?>/gi,"\n").replace(/<\/(p|div|li|blockquote|pre|h1|h2|h3|h4|h5|h6)>/gi,"$&\n").replace(/<[^>]+>/g,"").replace(/\n{3,}/g,"\n\n").trim()}
 function rootName(fs){return norm(fs[0].webkitRelativePath||"").split("/")[0]||""}
 function stripRoot(p,r){return r&&p.startsWith(r+"/")?p.slice(r.length+1):p}

@@ -65,7 +65,9 @@ svg.addEventListener('pointerdown', (e) => {
     }
     if (e.shiftKey) toggleSelection(node.id);
     else if (!isSelected(node.id)) setPrimarySelection(node.id, false);
-    const rootIds = e.shiftKey ? [...state.selectedIds] : [node.id];
+    const rootIds = e.shiftKey
+      ? [...state.selectedIds]
+      : (isSelected(node.id) ? [...state.selectedIds] : [node.id]);
     const dragContext = buildDragContext(rootIds);
     state.dragRootIds = dragContext.rootIds;
     state.draggingNodeIds = dragContext.draggingNodeIds;
