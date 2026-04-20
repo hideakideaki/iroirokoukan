@@ -235,12 +235,220 @@ Sub RunAll()
     BuildNormalized
     DrawGantt
     DrawGanttYearMonth
+    DrawGanttYearMonthCompressed
     DrawGanttCompressed
     DrawGanttWeekly
     DrawGanttWeeklyCompressed
     DrawGanttDaily
     DrawGanttDailyCompressed
     BuildMilestoneProjTable
+End Sub
+
+Sub DrawGanttYearMonthCompressed()
+    Dim COLOR_MONTH As Long
+    Dim COLOR_DATE As Long
+    Dim START_YEAR As Long
+    Dim END_YEAR As Long
+    Dim ganttColWidth As Double
+    Dim catColors As Object
+    Dim showTMB As Boolean
+
+    COLOR_MONTH = RGB(255, 242, 204)
+    COLOR_DATE = RGB(198, 239, 206)
+    EnsureSettingSheet
+    START_YEAR = CLng(Worksheets("Setting").Range("B1").Value)
+    END_YEAR = CLng(Worksheets("Setting").Range("B2").Value)
+    ganttColWidth = 3
+
+    Dim settingColWidth As Variant
+    Dim settingMonthColor As Variant
+    Dim settingDateColor As Variant
+    settingColWidth = Worksheets("Setting").Range("B3").Value
+    settingMonthColor = Worksheets("Setting").Range("B4").Value
+    settingDateColor = Worksheets("Setting").Range("B5").Value
+    If IsNumeric(settingColWidth) And settingColWidth > 0 Then
+        ganttColWidth = CDbl(settingColWidth)
+    End If
+    COLOR_MONTH = ParseSettingColor(settingMonthColor, COLOR_MONTH)
+    COLOR_DATE = ParseSettingColor(settingDateColor, COLOR_DATE)
+    Set catColors = LoadCategoryColors(Worksheets("Setting"))
+    showTMB = (CLng(Worksheets("Setting").Range("B6").Value) <> 0)
+
+    Dim wsN As Worksheet, wsG As Worksheet
+    Set wsN = Worksheets("Normalized")
+    On Error Resume Next
+    Set wsG = Worksheets("Gantt_YM_Compact")
+    On Error GoTo 0
+    If wsG Is Nothing Then
+        Set wsG = Worksheets.Add(After:=Worksheets(Worksheets.Count))
+        wsG.Name = "Gantt_YM_Compact"
+    End If
+
+    wsG.Cells.Clear
+    wsG.Cells(2, 1).Value = "Proj"
+    wsG.Cells(2, 2).Value = "Dest"
+    wsG.Cells(2, 3).Value = "Category"
+    wsG.Cells(2, 4).Value = "Milestone"
+    wsG.Cells(2, 5).Value = "Date"
+
+    Dim startCol As Long: startCol = 6
+    Dim c As Long: c = startCol
+    Dim y As Long, m As Long
+    For y = START_YEAR To END_YEAR
+        Dim yearStartCol As Long
+        yearStartCol = c
+        For m = 1 To 12
+            If showTMB Then
+                wsG.Range(wsG.Cells(2, c), wsG.Cells(2, c + 2)).Merge
+                wsG.Cells(2, c).Value = m
+                wsG.Cells(2, c).HorizontalAlignment = xlCenter
+                wsG.Cells(3, c).Value = "T"
+                wsG.Cells(3, c + 1).Value = "M"
+                wsG.Cells(3, c + 2).Value = "B"
+                c = c + 3
+            Else
+                wsG.Cells(2, c).Value = m
+                wsG.Cells(2, c).HorizontalAlignment = xlCenter
+                c = c + 1
+            End If
+        Next
+        wsG.Range(wsG.Cells(1, yearStartCol), wsG.Cells(1, c - 1)).Merge
+        wsG.Cells(1, yearStartCol).Value = y
+        wsG.Cells(1, yearStartCol).HorizontalAlignment = xlCenter
+    Next
+
+    Dim lastCol As Long
+    lastCol = c - 1
+    wsG.Range(wsG.Cells(1, startCol), wsG.Cells(1, lastCol)).EntireColumn.ColumnWidth = ganttColWidth
+
+    Dim lanes As Collection
+    Dim laneEndCols As Object
+    Set lanes = New Collection
+    Set laneEndCols = CreateObject("Scripting.Dictionary")
+
+    Dim currentRow As Long
+    If showTMB Then
+        currentRow = 4
+    Else
+        currentRow = 3
+    End If
+
+    Dim prevGroupKey As String
+    prevGroupKey = ""
+
+    Dim r As Long
+    For r = 2 To wsN.Cells(wsN.Rows.Count, 1).End(xlUp).Row
+        If Not IsNumeric(wsN.Cells(r, 1).Value) Or Not IsNumeric(wsN.Cells(r, 2).Value) Then GoTo NextYmCompactRow
+
+        Dim yr As Long, mo As Long
+        yr = CLng(wsN.Cells(r, 1).Value)
+        mo = CLng(wsN.Cells(r, 2).Value)
+        If yr < START_YEAR Or yr > END_YEAR Then GoTo NextYmCompactRow
+        If mo < 1 Or mo > 12 Then GoTo NextYmCompactRow
+
+        Dim curProj As String, curDest As String, curCat As String
+        curProj = CStr(wsN.Cells(r, 8).Value)
+        curDest = CStr(wsN.Cells(r, 9).Value)
+        curCat = CStr(wsN.Cells(r, 10).Value)
+
+        Dim groupKey As String
+        groupKey = curProj & "|" & curDest & "|" & curCat
+
+        If Len(prevGroupKey) > 0 And groupKey <> prevGroupKey Then
+            currentRow = currentRow + 1
+            With wsG.Range(wsG.Cells(currentRow, 1), wsG.Cells(currentRow, lastCol)).Borders(xlEdgeTop)
+                .LineStyle = xlContinuous
+                .Weight = xlThick
+            End With
+            Set lanes = New Collection
+            Set laneEndCols = CreateObject("Scripting.Dictionary")
+        End If
+        prevGroupKey = groupKey
+
+        Dim eventStartCol As Long, eventEndCol As Long
+        Dim visualEndCol As Long
+        Dim baseCol As Long
+        If showTMB Then
+            baseCol = startCol + (yr - START_YEAR) * 36 + (mo - 1) * 3
+            If wsN.Cells(r, 5).Value = "MONTH" Then
+                eventStartCol = baseCol
+                eventEndCol = baseCol + 2
+            Else
+                Select Case CStr(wsN.Cells(r, 3).Value)
+                    Case "T": eventStartCol = baseCol
+                    Case "M": eventStartCol = baseCol + 1
+                    Case "B": eventStartCol = baseCol + 2
+                    Case Else: eventStartCol = baseCol
+                End Select
+                eventEndCol = eventStartCol
+            End If
+        Else
+            eventStartCol = startCol + (yr - START_YEAR) * 12 + (mo - 1)
+            eventEndCol = eventStartCol
+        End If
+        visualEndCol = GetVisualEndCol(eventStartCol, eventEndCol, CStr(wsN.Cells(r, 4).Value), ganttColWidth)
+
+        Dim laneIndex As Long
+        laneIndex = FindAvailableLaneIndex(laneEndCols, lanes.Count, eventStartCol)
+
+        Dim targetRow As Long
+        If laneIndex = 0 Then
+            targetRow = currentRow
+            lanes.Add targetRow
+            laneEndCols(CStr(lanes.Count)) = visualEndCol
+            currentRow = currentRow + 1
+            laneIndex = lanes.Count
+            wsG.Cells(targetRow, 1).Value = curProj
+            wsG.Cells(targetRow, 2).Value = curDest
+            wsG.Cells(targetRow, 3).Value = curCat
+            If laneIndex > 1 Then
+                wsG.Cells(targetRow, 1).Font.Color = RGB(180, 180, 180)
+                wsG.Cells(targetRow, 2).Font.Color = RGB(180, 180, 180)
+                wsG.Cells(targetRow, 3).Font.Color = RGB(180, 180, 180)
+            End If
+        Else
+            targetRow = CLng(lanes(laneIndex))
+            laneEndCols(CStr(laneIndex)) = visualEndCol
+        End If
+
+        AppendCellText wsG.Cells(targetRow, 4), CStr(wsN.Cells(r, 6).Value)
+        If Len(Trim(CStr(wsN.Cells(r, 7).Value))) = 0 Then
+            AppendCellText wsG.Cells(targetRow, 5), yr & "/" & mo
+        Else
+            AppendCellText wsG.Cells(targetRow, 5), yr & "/" & mo & "/" & wsN.Cells(r, 7).Value
+        End If
+
+        Dim catColor As Variant
+        catColor = GetCategoryColor(catColors, curCat)
+
+        Dim fillColor As Long
+        If Not IsEmpty(catColor) Then
+            fillColor = CLng(catColor)
+        ElseIf wsN.Cells(r, 5).Value = "MONTH" Then
+            fillColor = COLOR_MONTH
+        Else
+            fillColor = COLOR_DATE
+        End If
+
+        If showTMB And wsN.Cells(r, 5).Value = "MONTH" Then
+            wsG.Range(wsG.Cells(targetRow, eventStartCol), wsG.Cells(targetRow, eventEndCol)).Interior.Color = fillColor
+        Else
+            wsG.Cells(targetRow, eventStartCol).Interior.Color = fillColor
+        End If
+        With wsG.Cells(targetRow, eventStartCol)
+            .Value = wsN.Cells(r, 4).Value
+            .WrapText = False
+            .HorizontalAlignment = xlLeft
+        End With
+
+NextYmCompactRow:
+    Next
+
+    Dim lastDataRow As Long
+    lastDataRow = currentRow - 1
+    If lastDataRow >= 2 Then
+        wsG.Range(wsG.Cells(2, 1), wsG.Cells(lastDataRow, startCol - 1)).AutoFilter
+    End If
 End Sub
 
 Sub DrawGanttYearMonth()
