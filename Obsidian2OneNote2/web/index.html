@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Obsidian to OneNote Preview</title>
+    <link rel="stylesheet" href="/web/styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Obsidian Preview to OneNote</p>
+          <h1>Obsidian2OneNote2</h1>
+        </div>
+        <div class="actions">
+          <button id="selectVaultButton" type="button">Select Vault</button>
+          <button id="openVaultNoteButton" type="button" class="secondary">Open Vault Note</button>
+          <label class="file-button" for="fileInput">Open .md</label>
+          <input id="fileInput" type="file" accept=".md,.markdown,.txt">
+          <button id="copyButton" type="button">Copy for OneNote</button>
+          <button id="copyPlainButton" type="button" class="secondary">Copy Plain Text</button>
+          <button id="clearButton" type="button" class="secondary">Clear</button>
+        </div>
+      </header>
+
+      <section class="hintbar">
+        <div class="meta">
+          <p id="vaultLabel">Vault: not selected</p>
+          <p id="noteLabel">Note: pasted text</p>
+        </div>
+        <label class="toggle">
+          <input id="joinLinesCheckbox" type="checkbox" checked>
+          <span>Join soft-wrapped lines for OneNote</span>
+        </label>
+        <p id="statusMessage">Ready.</p>
+      </section>
+
+      <main class="workspace">
+        <section class="panel editor-panel">
+          <div class="panel-header">
+            <h2>Markdown</h2>
+            <p>Paste Obsidian text here, or load a note by path from the selected vault.</p>
+          </div>
+          <textarea id="markdownInput" spellcheck="false"></textarea>
+        </section>
+
+        <section class="panel preview-panel">
+          <div class="panel-header">
+            <h2>Preview</h2>
+            <p>The preview is converted to OneNote-friendly HTML before copy.</p>
+          </div>
+          <article id="preview" class="preview markdown-preview"></article>
+        </section>
+      </main>
+    </div>
+
+    <script src="/vendor/marked.min.js"></script>
+    <script src="/vendor/purify.min.js"></script>
+    <script src="/web/app.js"></script>
+  </body>
+</html>

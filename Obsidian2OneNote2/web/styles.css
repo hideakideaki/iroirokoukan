@@ -1,0 +1,336 @@
+:root {
+  color-scheme: light;
+  --bg: #f5f0e8;
+  --panel: #fffaf2;
+  --panel-strong: #fffdf8;
+  --line: #d9ccb8;
+  --line-strong: #b9a388;
+  --ink: #2b241c;
+  --muted: #786b5d;
+  --accent: #a4491a;
+  --accent-soft: #f2d3ba;
+  --shadow: 0 18px 45px rgba(71, 46, 20, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", "Yu Gothic UI", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, rgba(212, 123, 56, 0.15), transparent 28%),
+    linear-gradient(180deg, #f8f3eb 0%, #f2ebdf 100%);
+}
+
+button,
+textarea,
+input {
+  font: inherit;
+}
+
+.app-shell {
+  width: min(1400px, calc(100vw - 32px));
+  margin: 16px auto;
+  padding: 18px;
+  border: 1px solid rgba(185, 163, 136, 0.5);
+  border-radius: 24px;
+  background: rgba(255, 250, 242, 0.82);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.topbar,
+.hintbar,
+.workspace {
+  display: flex;
+  gap: 16px;
+}
+
+.topbar {
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 30px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+button,
+.file-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: linear-gradient(180deg, #fff5ea, #f4ddc8);
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+button:hover,
+.file-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(121, 79, 31, 0.12);
+}
+
+button.secondary {
+  background: var(--panel-strong);
+}
+
+#fileInput {
+  display: none;
+}
+
+.hintbar {
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: rgba(255, 253, 248, 0.78);
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.meta p {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+#statusMessage {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.workspace {
+  min-height: calc(100vh - 185px);
+}
+
+.panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid rgba(185, 163, 136, 0.5);
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--panel);
+}
+
+.panel-header {
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(185, 163, 136, 0.4);
+  background: linear-gradient(180deg, rgba(255, 248, 240, 0.95), rgba(248, 237, 224, 0.95));
+}
+
+.panel-header p {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+#markdownInput,
+.preview {
+  flex: 1;
+  min-height: 0;
+  padding: 22px;
+}
+
+#markdownInput {
+  border: 0;
+  resize: none;
+  outline: none;
+  background: transparent;
+  line-height: 1.65;
+  color: var(--ink);
+  font-family: "Consolas", "BIZ UDGothic", monospace;
+}
+
+.preview {
+  overflow: auto;
+  line-height: 1.7;
+}
+
+.markdown-preview > *:first-child {
+  margin-top: 0;
+}
+
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3,
+.markdown-preview h4 {
+  margin: 1.5em 0 0.6em;
+  line-height: 1.25;
+}
+
+.markdown-preview h1 {
+  padding-bottom: 0.25em;
+  border-bottom: 2px solid var(--accent-soft);
+}
+
+.markdown-preview p,
+.markdown-preview ul,
+.markdown-preview ol,
+.markdown-preview blockquote,
+.markdown-preview pre,
+.markdown-preview table {
+  margin: 0 0 1em;
+}
+
+.markdown-preview a {
+  color: #9b3d0f;
+  text-decoration-thickness: 2px;
+}
+
+.markdown-preview code {
+  padding: 0.14em 0.4em;
+  border-radius: 6px;
+  background: #f3e2d2;
+  font-family: "Consolas", "BIZ UDGothic", monospace;
+}
+
+.markdown-preview pre {
+  padding: 14px 16px;
+  border-radius: 14px;
+  overflow: auto;
+  background: #2a211b;
+  color: #f8efe2;
+}
+
+.markdown-preview pre code {
+  padding: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.markdown-preview blockquote {
+  padding: 0.9em 1.1em;
+  border-left: 4px solid var(--line-strong);
+  border-radius: 12px;
+  background: #f9efe4;
+  color: #54493d;
+}
+
+.markdown-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.markdown-preview th,
+.markdown-preview td {
+  padding: 10px 12px;
+  border: 1px solid #d8cab4;
+  vertical-align: top;
+}
+
+.markdown-preview th {
+  background: #f3e0cb;
+}
+
+.markdown-preview hr {
+  border: 0;
+  border-top: 1px solid #d5c5af;
+  margin: 1.5em 0;
+}
+
+.markdown-preview .internal-link {
+  color: #864119;
+  font-weight: 600;
+}
+
+.markdown-preview .embed-placeholder {
+  padding: 12px 14px;
+  border: 1px dashed #bf8c61;
+  border-radius: 12px;
+  background: #fff3e7;
+  color: #7b4d27;
+}
+
+.markdown-preview .embed-figure {
+  margin: 0 0 1em;
+}
+
+.markdown-preview .embed-figure img,
+.markdown-preview img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 14px;
+}
+
+.markdown-preview .embed-figure figcaption {
+  margin-top: 0.4em;
+  font-size: 0.92em;
+  color: var(--muted);
+}
+
+.markdown-preview mark {
+  background: #ffed91;
+  padding: 0.06em 0.2em;
+}
+
+.markdown-preview .placeholder {
+  color: var(--muted);
+}
+
+@media (max-width: 980px) {
+  .workspace,
+  .topbar,
+  .hintbar {
+    flex-direction: column;
+  }
+
+  .actions {
+    justify-content: flex-start;
+  }
+
+  .workspace {
+    min-height: auto;
+  }
+
+  .panel {
+    min-height: 360px;
+  }
+}
