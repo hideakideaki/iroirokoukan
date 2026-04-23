@@ -45,6 +45,8 @@ const state = {
   vaultPathMap: new Map(),
   vaultNameMap: new Map(),
   objectUrlMap: new Map(),
+  contentIndexStatus: "idle",
+  contentIndexPromise: null,
 };
 
 marked.setOptions({
@@ -106,6 +108,10 @@ async function refreshVaultStatus() {
     const payload = await response.json();
     state.vaultRoot = payload.root || null;
     state.vaultAccessMode = payload.root ? "server" : state.vaultAccessMode;
+    if (state.vaultAccessMode === "server") {
+      state.contentIndexStatus = "idle";
+      state.contentIndexPromise = null;
+    }
     syncLabels();
   } catch (error) {
     console.error(error);
@@ -148,6 +154,8 @@ async function selectVault() {
     state.vaultEntries = [];
     state.vaultPathMap = new Map();
     state.vaultNameMap = new Map();
+    state.contentIndexStatus = "idle";
+    state.contentIndexPromise = null;
     syncLabels();
     setStatus(`Vault indexed: ${payload.file_count} files`);
     render();
@@ -172,6 +180,7 @@ async function selectVaultWithBrowserPicker() {
     state.vaultAccessMode = "browser";
     syncLabels();
     setStatus(`Vault indexed: ${entries.length} files`);
+    startBrowserContentIndexing(entries);
     render();
   } catch (error) {
     if (error && error.name === "AbortError") {
@@ -247,7 +256,8 @@ function closeNoteSearchModalDialog() {
 
 function renderNoteSearchResults() {
   const matches = getFilteredNoteEntries(noteSearchInput.value);
-  noteSearchMeta.textContent = `${matches.length} note(s)`;
+  const status = getContentIndexLabel();
+  noteSearchMeta.textContent = `${matches.length} note(s)${status ? ` • ${status}` : ""}`;
   noteSearchResults.innerHTML = "";
 
   if (!matches.length) {
@@ -262,7 +272,10 @@ function renderNoteSearchResults() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "note-result";
-    button.innerHTML = `<strong>${escapeHtml(entry.name)}</strong><span>${escapeHtml(entry.path)}</span>`;
+    const snippet = entry.searchSnippet
+      ? `<span>${escapeHtml(entry.searchSnippet)}</span>`
+      : `<span>${escapeHtml(entry.path)}</span>`;
+    button.innerHTML = `<strong>${escapeHtml(entry.name)}</strong><span>${escapeHtml(entry.path)}</span>${snippet}`;
     button.addEventListener("click", async () => {
       await loadBrowserVaultNote(entry);
       closeNoteSearchModalDialog();
@@ -275,19 +288,22 @@ function getFilteredNoteEntries(query) {
   const source = state.vaultEntries.filter((entry) => isMarkdownPath(entry.path));
   const normalized = query.trim().toLowerCase();
   if (!normalized) {
-    return [...source].sort((a, b) => a.path.localeCompare(b.path));
+    return [...source]
+      .map((entry) => ({ ...entry, searchScore: 0, searchSnippet: "" }))
+      .sort((a, b) => a.path.localeCompare(b.path));
   }
 
-  const pathMatches = source.filter((entry) => entry.path.toLowerCase().includes(normalized));
-  const nameFirst = pathMatches.sort((a, b) => {
-    const aStarts = a.name.toLowerCase().startsWith(normalized) ? 0 : 1;
-    const bStarts = b.name.toLowerCase().startsWith(normalized) ? 0 : 1;
-    if (aStarts !== bStarts) {
-      return aStarts - bStarts;
+  const ranked = source
+    .map((entry) => rankNoteEntry(entry, normalized))
+    .filter((entry) => entry.searchScore > 0);
+
+  ranked.sort((a, b) => {
+    if (a.searchScore !== b.searchScore) {
+      return b.searchScore - a.searchScore;
     }
     return a.path.localeCompare(b.path);
   });
-  return nameFirst;
+  return ranked;
 }
 
 async function loadBrowserVaultNote(entry) {
@@ -955,12 +971,105 @@ async function indexBrowserVault(rootHandle) {
         path: nextPath,
         mime,
         isImage: isImageName(child.name, mime),
+        textLower: null,
+        textRaw: null,
       });
     }
   }
 
   await walkDirectory(rootHandle, "");
   return entries;
+}
+
+function startBrowserContentIndexing(entries) {
+  const markdownEntries = entries.filter((entry) => isMarkdownPath(entry.path));
+  state.contentIndexStatus = "indexing";
+  state.contentIndexPromise = (async () => {
+    for (const entry of markdownEntries) {
+      try {
+        const file = await entry.handle.getFile();
+        const text = await file.text();
+        entry.textRaw = text;
+        entry.textLower = text.toLowerCase();
+      } catch (error) {
+        console.error(error);
+        entry.textRaw = "";
+        entry.textLower = "";
+      }
+    }
+    state.contentIndexStatus = "ready";
+    if (!noteSearchModal.classList.contains("hidden")) {
+      renderNoteSearchResults();
+    }
+  })().catch((error) => {
+    console.error(error);
+    state.contentIndexStatus = "error";
+  });
+}
+
+function getContentIndexLabel() {
+  if (state.vaultAccessMode !== "browser") {
+    return "";
+  }
+  if (state.contentIndexStatus === "indexing") {
+    return "content indexing in progress";
+  }
+  if (state.contentIndexStatus === "ready") {
+    return "searching name, path, and content";
+  }
+  if (state.contentIndexStatus === "error") {
+    return "content indexing failed";
+  }
+  return "";
+}
+
+function rankNoteEntry(entry, normalizedQuery) {
+  const nameLower = entry.name.toLowerCase();
+  const pathLower = entry.path.toLowerCase();
+  const textLower = entry.textLower || "";
+  let searchScore = 0;
+  let searchSnippet = "";
+
+  if (nameLower === normalizedQuery) {
+    searchScore += 120;
+  } else if (nameLower.startsWith(normalizedQuery)) {
+    searchScore += 90;
+  } else if (nameLower.includes(normalizedQuery)) {
+    searchScore += 70;
+  }
+
+  if (pathLower.startsWith(normalizedQuery)) {
+    searchScore += 60;
+  } else if (pathLower.includes(normalizedQuery)) {
+    searchScore += 45;
+  }
+
+  const contentIndex = textLower.indexOf(normalizedQuery);
+  if (contentIndex >= 0) {
+    searchScore += 35;
+    searchSnippet = buildContentSnippet(entry.textRaw || "", contentIndex, normalizedQuery.length);
+  }
+
+  return {
+    ...entry,
+    searchScore,
+    searchSnippet,
+  };
+}
+
+function buildContentSnippet(text, index, length) {
+  if (!text) {
+    return "";
+  }
+  const start = Math.max(0, index - 28);
+  const end = Math.min(text.length, index + length + 44);
+  const snippet = text
+    .slice(start, end)
+    .replace(/\s+/g, " ")
+    .trim();
+  const prefix = start > 0 ? "..." : "";
+  const suffix = end < text.length ? "..." : "";
+  return `${prefix}${snippet}${suffix}`;
 }
 
 function buildVaultPathMap(entries) {

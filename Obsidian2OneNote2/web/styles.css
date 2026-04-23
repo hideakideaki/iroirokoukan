@@ -409,6 +409,11 @@ button.secondary {
   color: var(--muted);
 }
 
+.note-result span + span {
+  margin-top: 4px;
+  color: #5f5142;
+}
+
 @media (max-width: 980px) {
   .workspace,
   .topbar,
