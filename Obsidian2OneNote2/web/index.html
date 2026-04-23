@@ -30,8 +30,8 @@
           <p id="noteLabel">Note: pasted text</p>
         </div>
         <label class="toggle">
-          <input id="joinLinesCheckbox" type="checkbox" checked>
-          <span>Join soft-wrapped lines for OneNote</span>
+          <input id="joinLinesCheckbox" type="checkbox">
+          <span>Join plain line breaks for OneNote</span>
         </label>
         <p id="statusMessage">Ready.</p>
       </section>
@@ -53,6 +53,28 @@
           <article id="preview" class="preview markdown-preview"></article>
         </section>
       </main>
+    </div>
+
+    <div id="noteSearchModal" class="modal hidden" aria-hidden="true">
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="noteSearchTitle">
+        <div class="modal-header">
+          <div>
+            <p class="eyebrow">Vault Search</p>
+            <h2 id="noteSearchTitle">Open Vault Note</h2>
+          </div>
+          <button id="closeNoteSearchButton" type="button" class="secondary">Close</button>
+        </div>
+        <div class="modal-body">
+          <input
+            id="noteSearchInput"
+            type="text"
+            placeholder="Search notes by name or path"
+            autocomplete="off"
+          >
+          <div id="noteSearchMeta" class="modal-meta"></div>
+          <div id="noteSearchResults" class="note-results"></div>
+        </div>
+      </div>
     </div>
 
     <script src="/vendor/marked.min.js"></script>

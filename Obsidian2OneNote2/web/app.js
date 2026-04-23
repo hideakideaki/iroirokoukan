@@ -10,6 +10,11 @@ const joinLinesCheckbox = document.getElementById("joinLinesCheckbox");
 const statusMessage = document.getElementById("statusMessage");
 const vaultLabel = document.getElementById("vaultLabel");
 const noteLabel = document.getElementById("noteLabel");
+const noteSearchModal = document.getElementById("noteSearchModal");
+const noteSearchInput = document.getElementById("noteSearchInput");
+const noteSearchResults = document.getElementById("noteSearchResults");
+const noteSearchMeta = document.getElementById("noteSearchMeta");
+const closeNoteSearchButton = document.getElementById("closeNoteSearchButton");
 
 const SAMPLE = `# OneNote handoff note
 
@@ -34,6 +39,12 @@ const state = {
   vaultRoot: null,
   currentNotePath: null,
   currentNoteName: null,
+  vaultAccessMode: null,
+  vaultHandle: null,
+  vaultEntries: [],
+  vaultPathMap: new Map(),
+  vaultNameMap: new Map(),
+  objectUrlMap: new Map(),
 };
 
 marked.setOptions({
@@ -68,12 +79,33 @@ clearButton.addEventListener("click", () => {
 });
 selectVaultButton.addEventListener("click", selectVault);
 openVaultNoteButton.addEventListener("click", openVaultNote);
+closeNoteSearchButton.addEventListener("click", closeNoteSearchModalDialog);
+noteSearchInput.addEventListener("input", debounce(renderNoteSearchResults, 80));
+noteSearchInput.addEventListener("keydown", async (event) => {
+  if (event.key === "Escape") {
+    closeNoteSearchModalDialog();
+    return;
+  }
+  if (event.key === "Enter") {
+    const [first] = getFilteredNoteEntries(noteSearchInput.value);
+    if (first) {
+      await loadBrowserVaultNote(first);
+      closeNoteSearchModalDialog();
+    }
+  }
+});
+noteSearchModal.addEventListener("click", (event) => {
+  if (event.target === noteSearchModal) {
+    closeNoteSearchModalDialog();
+  }
+});
 
 async function refreshVaultStatus() {
   try {
     const response = await fetch("/api/vault/status");
     const payload = await response.json();
     state.vaultRoot = payload.root || null;
+    state.vaultAccessMode = payload.root ? "server" : state.vaultAccessMode;
     syncLabels();
   } catch (error) {
     console.error(error);
@@ -82,6 +114,11 @@ async function refreshVaultStatus() {
 }
 
 async function selectVault() {
+  if (typeof window.showDirectoryPicker === "function") {
+    await selectVaultWithBrowserPicker();
+    return;
+  }
+
   const current = state.vaultRoot || "";
   const selected = window.prompt("Enter the Obsidian vault path.", current);
   if (selected === null) {
@@ -106,6 +143,11 @@ async function selectVault() {
       return;
     }
     state.vaultRoot = payload.root;
+    state.vaultAccessMode = "server";
+    state.vaultHandle = null;
+    state.vaultEntries = [];
+    state.vaultPathMap = new Map();
+    state.vaultNameMap = new Map();
     syncLabels();
     setStatus(`Vault indexed: ${payload.file_count} files`);
     render();
@@ -115,7 +157,38 @@ async function selectVault() {
   }
 }
 
+async function selectVaultWithBrowserPicker() {
+  setStatus("Waiting for vault selection...");
+  try {
+    const handle = await window.showDirectoryPicker({ mode: "read" });
+    setStatus("Indexing vault...");
+    const entries = await indexBrowserVault(handle);
+    resetObjectUrlCache();
+    state.vaultHandle = handle;
+    state.vaultEntries = entries;
+    state.vaultPathMap = buildVaultPathMap(entries);
+    state.vaultNameMap = buildVaultNameMap(entries);
+    state.vaultRoot = handle.name;
+    state.vaultAccessMode = "browser";
+    syncLabels();
+    setStatus(`Vault indexed: ${entries.length} files`);
+    render();
+  } catch (error) {
+    if (error && error.name === "AbortError") {
+      setStatus("Vault selection cancelled.");
+      return;
+    }
+    console.error(error);
+    setStatus("Vault selection failed.");
+  }
+}
+
 async function openVaultNote() {
+  if (state.vaultAccessMode === "browser" && state.vaultEntries.length) {
+    openNoteSearchModalDialog();
+    return;
+  }
+
   if (!state.vaultRoot) {
     setStatus("Select a vault first.");
     return;
@@ -159,6 +232,79 @@ async function openVaultNote() {
   }
 }
 
+function openNoteSearchModalDialog() {
+  noteSearchModal.classList.remove("hidden");
+  noteSearchModal.setAttribute("aria-hidden", "false");
+  noteSearchInput.value = state.currentNotePath || state.currentNoteName || "";
+  renderNoteSearchResults();
+  window.setTimeout(() => noteSearchInput.focus(), 0);
+}
+
+function closeNoteSearchModalDialog() {
+  noteSearchModal.classList.add("hidden");
+  noteSearchModal.setAttribute("aria-hidden", "true");
+}
+
+function renderNoteSearchResults() {
+  const matches = getFilteredNoteEntries(noteSearchInput.value);
+  noteSearchMeta.textContent = `${matches.length} note(s)`;
+  noteSearchResults.innerHTML = "";
+
+  if (!matches.length) {
+    const empty = document.createElement("p");
+    empty.className = "modal-meta";
+    empty.textContent = "No notes matched the current query.";
+    noteSearchResults.appendChild(empty);
+    return;
+  }
+
+  matches.slice(0, 100).forEach((entry) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "note-result";
+    button.innerHTML = `<strong>${escapeHtml(entry.name)}</strong><span>${escapeHtml(entry.path)}</span>`;
+    button.addEventListener("click", async () => {
+      await loadBrowserVaultNote(entry);
+      closeNoteSearchModalDialog();
+    });
+    noteSearchResults.appendChild(button);
+  });
+}
+
+function getFilteredNoteEntries(query) {
+  const source = state.vaultEntries.filter((entry) => isMarkdownPath(entry.path));
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) {
+    return [...source].sort((a, b) => a.path.localeCompare(b.path));
+  }
+
+  const pathMatches = source.filter((entry) => entry.path.toLowerCase().includes(normalized));
+  const nameFirst = pathMatches.sort((a, b) => {
+    const aStarts = a.name.toLowerCase().startsWith(normalized) ? 0 : 1;
+    const bStarts = b.name.toLowerCase().startsWith(normalized) ? 0 : 1;
+    if (aStarts !== bStarts) {
+      return aStarts - bStarts;
+    }
+    return a.path.localeCompare(b.path);
+  });
+  return nameFirst;
+}
+
+async function loadBrowserVaultNote(entry) {
+  try {
+    const file = await entry.handle.getFile();
+    markdownInput.value = await file.text();
+    state.currentNotePath = entry.path;
+    state.currentNoteName = entry.name;
+    syncLabels();
+    render();
+    setStatus(`Opened ${entry.path}`);
+  } catch (error) {
+    console.error(error);
+    setStatus("Could not open the note.");
+  }
+}
+
 async function handleFileOpen(event) {
   const [file] = event.target.files;
   if (!file) {
@@ -167,7 +313,7 @@ async function handleFileOpen(event) {
 
   const text = await file.text();
   markdownInput.value = text;
-  state.currentNotePath = null;
+  state.currentNotePath = await promptForNotePath(file.name);
   state.currentNoteName = file.name;
   syncLabels();
   render();
@@ -203,6 +349,23 @@ function normalizeMarkdown(source, options) {
   }
 
   return text.trim();
+}
+
+async function promptForNotePath(defaultName) {
+  if (!state.vaultRoot) {
+    return null;
+  }
+
+  const suggested = state.currentNotePath || defaultName || "";
+  const selected = window.prompt(
+    "Optional: enter the note path relative to the selected vault for relative image resolution.",
+    suggested
+  );
+  if (selected === null) {
+    return null;
+  }
+  const normalized = selected.trim().replaceAll("\\", "/");
+  return normalized || null;
 }
 
 function stripObsidianComments(text) {
@@ -396,6 +559,10 @@ function buildImageFigure(src, label, origin) {
 }
 
 async function resolveVaultTarget(target) {
+  if (state.vaultAccessMode === "browser" && state.vaultEntries.length) {
+    return await resolveBrowserVaultTarget(target);
+  }
+
   const params = new URLSearchParams({ target });
   if (state.currentNotePath) {
     params.set("note_path", state.currentNotePath);
@@ -408,6 +575,59 @@ async function resolveVaultTarget(target) {
     console.error(error);
     return null;
   }
+}
+
+async function resolveBrowserVaultTarget(target) {
+  const cleanTarget = normalizeTargetForLookup(target);
+  if (!cleanTarget) {
+    return { found: false, reason: "Empty target." };
+  }
+
+  const candidates = [];
+  const direct = state.vaultPathMap.get(cleanTarget.toLowerCase());
+  if (direct) {
+    candidates.push(direct);
+  }
+
+  if (state.currentNotePath) {
+    const relative = normalizePathSegments(joinRelativePath(dirnamePosix(state.currentNotePath), cleanTarget));
+    const relativeCandidate = state.vaultPathMap.get(relative.toLowerCase());
+    if (relativeCandidate) {
+      candidates.push(relativeCandidate);
+    }
+  }
+
+  if (!cleanTarget.includes("/")) {
+    const nameMatches = state.vaultNameMap.get(cleanTarget.toLowerCase()) || [];
+    if (nameMatches.length === 1) {
+      candidates.push(nameMatches[0]);
+    }
+  }
+
+  if (!candidates.length) {
+    const suffixMatches = state.vaultEntries.filter((entry) =>
+      entry.path.toLowerCase().endsWith(cleanTarget.toLowerCase())
+    );
+    if (suffixMatches.length === 1) {
+      candidates.push(suffixMatches[0]);
+    }
+  }
+
+  if (!candidates.length) {
+    return { found: false, reason: `Could not resolve '${cleanTarget}'.` };
+  }
+
+  const entry = candidates[0];
+  const url = await getBrowserEntryObjectUrl(entry);
+  return {
+    found: true,
+    target: cleanTarget,
+    name: entry.name,
+    relative_path: entry.path,
+    url,
+    mime: entry.mime,
+    is_image: entry.isImage,
+  };
 }
 
 async function copyForOneNote() {
@@ -446,6 +666,7 @@ async function copyPlainText() {
 async function buildClipboardHtml() {
   const clone = await buildRenderedFragment({
     joinSoftLines: joinLinesCheckbox.checked,
+    breaks: !joinLinesCheckbox.checked,
   });
   convertTaskCheckboxes(clone);
   await embedImagesForClipboard(clone);
@@ -456,6 +677,7 @@ async function buildClipboardHtml() {
 async function buildPlainText() {
   const clone = await buildRenderedFragment({
     joinSoftLines: joinLinesCheckbox.checked,
+    breaks: !joinLinesCheckbox.checked,
   });
   convertTaskCheckboxes(clone);
   clone.querySelectorAll("img").forEach((image) => {
@@ -470,7 +692,7 @@ async function buildRenderedFragment(options) {
   container.className = "markdown-preview";
   await renderMarkdownInto(container, {
     joinSoftLines: options.joinSoftLines,
-    breaks: false,
+    breaks: options.breaks,
     token: null,
     ignoreTokenMismatch: true,
   });
@@ -680,7 +902,7 @@ function copyViaExecCommand(html) {
 
 function syncLabels() {
   vaultLabel.textContent = state.vaultRoot
-    ? `Vault: ${state.vaultRoot}`
+    ? `Vault: ${state.vaultRoot}${state.vaultAccessMode === "browser" ? " (picker)" : ""}`
     : "Vault: not selected";
   const noteText = state.currentNotePath || state.currentNoteName || "pasted text";
   noteLabel.textContent = `Note: ${noteText}`;
@@ -712,4 +934,130 @@ function escapeHtml(value) {
 
 function setStatus(message) {
   statusMessage.textContent = message;
+}
+
+async function indexBrowserVault(rootHandle) {
+  const entries = [];
+
+  async function walkDirectory(directoryHandle, prefix) {
+    for await (const child of directoryHandle.values()) {
+      const nextPath = prefix ? `${prefix}/${child.name}` : child.name;
+      if (child.kind === "directory") {
+        await walkDirectory(child, nextPath);
+        continue;
+      }
+
+      const mime = guessMimeFromName(child.name);
+      entries.push({
+        kind: child.kind,
+        handle: child,
+        name: child.name,
+        path: nextPath,
+        mime,
+        isImage: isImageName(child.name, mime),
+      });
+    }
+  }
+
+  await walkDirectory(rootHandle, "");
+  return entries;
+}
+
+function buildVaultPathMap(entries) {
+  const map = new Map();
+  entries.forEach((entry) => {
+    map.set(entry.path.toLowerCase(), entry);
+  });
+  return map;
+}
+
+function buildVaultNameMap(entries) {
+  const map = new Map();
+  entries.forEach((entry) => {
+    const key = entry.name.toLowerCase();
+    const list = map.get(key) || [];
+    list.push(entry);
+    map.set(key, list);
+  });
+  return map;
+}
+
+function normalizeTargetForLookup(target) {
+  let value = decodeURIComponent(String(target || "").trim()).replaceAll("\\", "/");
+  if (value.includes("|")) {
+    value = value.split("|", 1)[0];
+  }
+  if (value.includes("?")) {
+    value = value.split("?", 1)[0];
+  }
+  if (value.includes("#")) {
+    value = value.split("#", 1)[0];
+  }
+  return normalizePathSegments(value);
+}
+
+function normalizePathSegments(path) {
+  const rawSegments = String(path || "").split("/");
+  const output = [];
+  rawSegments.forEach((segment) => {
+    if (!segment || segment === ".") {
+      return;
+    }
+    if (segment === "..") {
+      if (output.length) {
+        output.pop();
+      }
+      return;
+    }
+    output.push(segment);
+  });
+  return output.join("/");
+}
+
+function joinRelativePath(base, target) {
+  if (!base) {
+    return target;
+  }
+  return `${base}/${target}`;
+}
+
+function dirnamePosix(path) {
+  const normalized = String(path || "").replaceAll("\\", "/");
+  const index = normalized.lastIndexOf("/");
+  return index >= 0 ? normalized.slice(0, index) : "";
+}
+
+function isMarkdownPath(path) {
+  return /\.(md|markdown|txt)$/i.test(path);
+}
+
+function guessMimeFromName(name) {
+  const lower = name.toLowerCase();
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+  if (lower.endsWith(".gif")) return "image/gif";
+  if (lower.endsWith(".bmp")) return "image/bmp";
+  if (lower.endsWith(".svg")) return "image/svg+xml";
+  if (lower.endsWith(".webp")) return "image/webp";
+  return "application/octet-stream";
+}
+
+function isImageName(name, mime) {
+  return /\.(png|jpe?g|gif|bmp|svg|webp)$/i.test(name) || mime.startsWith("image/");
+}
+
+async function getBrowserEntryObjectUrl(entry) {
+  const existing = state.objectUrlMap.get(entry.path);
+  if (existing) {
+    return existing;
+  }
+  const file = await entry.handle.getFile();
+  const url = URL.createObjectURL(file);
+  state.objectUrlMap.set(entry.path, url);
+  return url;
+}
+
+function resetObjectUrlCache() {
+  state.objectUrlMap.forEach((url) => URL.revokeObjectURL(url));
+  state.objectUrlMap = new Map();
 }

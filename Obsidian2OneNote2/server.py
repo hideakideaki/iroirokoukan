@@ -48,9 +48,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def normalize_target(value: str) -> str:
-    target = value.strip().replace("\\", "/")
+    target = urllib.parse.unquote(value).strip().replace("\\", "/")
     if "|" in target:
         target = target.split("|", 1)[0]
+    if "?" in target:
+        target = target.split("?", 1)[0]
     if "#" in target:
         target = target.split("#", 1)[0]
     return target.strip()
